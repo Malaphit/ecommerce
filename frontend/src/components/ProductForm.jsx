@@ -29,7 +29,7 @@ function ProductForm({ productId, onSave }) {
       }
       onSave();
     } catch (error) {
-      alert('Error saving product');
+      alert('Ошибка сохранения продукта');
     }
   };
 
@@ -39,13 +39,13 @@ function ProductForm({ productId, onSave }) {
         type="text"
         value={formData.name}
         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        placeholder="Name"
+        placeholder="Название"
       />
       <select
         value={formData.category_id}
         onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
       >
-        <option value="">Select Category</option>
+        <option value="">Выберите категорию</option>
         {categories.map((cat) => (
           <option key={cat.id} value={cat.id}>
             {cat.name}
@@ -56,28 +56,28 @@ function ProductForm({ productId, onSave }) {
         type="number"
         value={formData.price}
         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-        placeholder="Price"
+        placeholder="Цена"
       />
       <textarea
         value={formData.description}
         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        placeholder="Description"
+        placeholder="Описание"
       />
       <input
         type="text"
         value={JSON.stringify(formData.available_sizes)}
         onChange={(e) => setFormData({ ...formData, available_sizes: JSON.parse(e.target.value) })}
-        placeholder="Sizes (JSON)"
+        placeholder="Размеры (JSON)"
       />
       <label>
-        Active:
+        Активен:
         <input
           type="checkbox"
           checked={formData.is_active}
           onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
         />
       </label>
-      <button type="submit">Save</button>
+      <button type="submit">Сохранить</button>
     </form>
   );
 }

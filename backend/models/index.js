@@ -1,11 +1,5 @@
-const { Sequelize, DataTypes } = require('sequelize');
-const dotenv = require('dotenv');
-
-dotenv.config();
-
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
-});
+const sequelize = require('../config/database');
+const { DataTypes, Sequelize } = require('sequelize');
 
 const User = sequelize.define('User', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -41,6 +35,7 @@ const User = sequelize.define('User', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [{ fields: ['email'] }, { fields: ['referral_code'] }],
+  defaultValue: Sequelize.NOW,
 });
 
 const Address = sequelize.define('Address', {
@@ -247,10 +242,9 @@ User.hasMany(ChatMessage, { as: 'AdminMessages', foreignKey: 'admin_id', onDelet
 ChatMessage.belongsTo(User, { as: 'User', foreignKey: 'user_id' });
 ChatMessage.belongsTo(User, { as: 'Admin', foreignKey: 'admin_id' });
 
-// Sync database
 sequelize.sync({ force: false }).then(() => {
-  console.log('Database synced');
-});
+    console.log('Database synced');
+  });  
 
 module.exports = {
   sequelize,

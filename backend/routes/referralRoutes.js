@@ -7,5 +7,6 @@ router.get('/', authenticate, authorize(['admin']), referralController.getReferr
 router.post('/', authenticate, authorize(['admin', 'user']), referralController.createReferral);
 router.put('/:id', authenticate, authorize(['admin']), referralController.updateReferral);
 router.delete('/:id', authenticate, authorize(['admin']), referralController.deleteReferral);
+router.post('/apply', authenticate, referralController.applyReferralCode);
 
 module.exports = router;

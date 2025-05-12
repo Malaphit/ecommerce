@@ -20,7 +20,7 @@ function CategoryForm({ categoryId, onSave }) {
       }
       onSave();
     } catch (error) {
-      alert('Error saving category');
+      alert('Ошибка сохранения категории');
     }
   };
 
@@ -30,20 +30,20 @@ function CategoryForm({ categoryId, onSave }) {
         type="text"
         value={formData.name}
         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        placeholder="Name"
+        placeholder="Название"
       />
       <textarea
         value={formData.description}
         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        placeholder="Description"
+        placeholder="Описание"
       />
       <input
         type="number"
         value={formData.weight}
         onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-        placeholder="Weight"
+        placeholder="Вес"
       />
-      <button type="submit">Save</button>
+      <button type="submit">Сохранить</button>
     </form>
   );
 }

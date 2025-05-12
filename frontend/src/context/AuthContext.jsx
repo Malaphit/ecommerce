@@ -1,11 +1,13 @@
 import { createContext, useState, useEffect } from 'react';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode'; 
 import api from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -24,11 +26,19 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', response.data.token);
     const decoded = jwtDecode(response.data.token);
     setUser(decoded);
+    if (decoded.role === 'admin') {
+      navigate('/admin');
+    } else if (decoded.role === 'manager') {
+      navigate('/manager');
+    } else {
+      navigate('/profile');
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    navigate('/login');
   };
 
   return (
