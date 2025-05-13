@@ -2,8 +2,24 @@ const { User, Address, Referral } = require('../models');
 
 exports.getUsers = async (req, res) => {
     try {
-      const users = await User.findAll({ include: [Address, { model: Referral, as: 'Inviter' }] });
-      res.json(users);
+      const { email, page = 1, limit = 10 } = req.query;
+      const where = {};
+      if (email) where.email = { [Op.iLike]: `%${email}%` };
+      
+      const offset = (page - 1) * limit;
+      const { count, rows } = await User.findAndCountAll({
+        where,
+        include: [Address, { model: Referral, as: 'Inviter' }],
+        limit,
+        offset,
+      });
+  
+      res.json({
+        users: rows,
+        total: count,
+        page: parseInt(page),
+        pages: Math.ceil(count / limit),
+      });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
