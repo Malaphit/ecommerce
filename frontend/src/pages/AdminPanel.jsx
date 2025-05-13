@@ -4,16 +4,16 @@ import ProductForm from '../components/ProductForm';
 import CategoryForm from '../components/CategoryForm';
 import OrderForm from '../components/OrderForm';
 import UserForm from '../components/UserForm';
-// import ReferralForm from '../components/ReferralForm';
 
 function AdminPanel() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
-  // const [referrals, setReferrals] = useState([]);
   const [userSearch, setUserSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const [productPage, setProductPage] = useState(1);
   const [categoryPage, setCategoryPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
@@ -35,25 +35,23 @@ function AdminPanel() {
   const fetchData = useCallback(async () => {
     try {
       const [prodRes, catRes, ordRes, userRes] = await Promise.all([
-        api.get(`/products?page=${productPage}&limit=${limit}&sort=${productSort}&order=${productOrder}`),
+        api.get(
+          `/products?page=${productPage}&limit=${limit}&sort=${productSort}&order=${productOrder}&category_id=${categoryFilter}&is_active=${
+            showInactive ? '' : 'true'
+          }`
+        ),
         api.get(`/categories?page=${categoryPage}&limit=${limit}`),
         api.get(`/orders?status=${orderStatusFilter}&page=${orderPage}&limit=${limit}&sort=${orderSort}&order=${orderOrder}`),
         api.get(`/users?email=${userSearch}&page=${userPage}&limit=${limit}`),
-        // api.get('/referrals'),
       ]);
-      setProducts(Array.isArray(prodRes.data.products) ? prodRes.data.products : []);
+      setProducts(prodRes.data.products || prodRes.data);
       setProductPagination({ total: prodRes.data.total, pages: prodRes.data.pages });
-      setCategories(Array.isArray(catRes.data.categories) ? catRes.data.categories : []);
+      setCategories(catRes.data.categories || catRes.data);
       setCategoryPagination({ total: catRes.data.total, pages: catRes.data.pages });
-      setOrders(Array.isArray(ordRes.data.orders) ? ordRes.data.orders : []);
+      setOrders(ordRes.data.orders || ordRes.data);
       setOrderPagination({ total: ordRes.data.total, pages: ordRes.data.pages });
-      setUsers(Array.isArray(userRes.data.users) ? userRes.data.users : []);
+      setUsers(userRes.data.users || userRes.data);
       setUserPagination({ total: userRes.data.total, pages: userRes.data.pages });
-      setProductPagination({
-        total: prodRes.data.total || 0,
-        pages: prodRes.data.pages || 1,
-      });
-      // setReferrals(refRes.data);
     } catch (error) {
       alert('Ошибка загрузки данных: ' + (error.response?.data?.message || 'Ошибка сервера'));
     }
@@ -68,6 +66,8 @@ function AdminPanel() {
     orderOrder,
     orderStatusFilter,
     userSearch,
+    categoryFilter,
+    showInactive,
   ]);
 
   useEffect(() => {
@@ -113,18 +113,26 @@ function AdminPanel() {
   const renderItem = (type, item, editId, FormComponent, formProps) => {
     const isEditing = item.id === editId;
     return (
-      <li key={item.id}>
+      <li key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
         {isEditing ? (
           <FormComponent {...formProps} onSave={handleSave} />
         ) : (
           <>
             {type === 'product' && (
-              <div>
-                <strong>{item.name}</strong> - {item.price} ₽
-                <br />
-                Категория: {item.Category?.name || 'Без категории'}
-                <br />
-                Размеры: {item.available_sizes.join(', ') || 'Нет размеров'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img
+                  src={`${process.env.REACT_APP_API_URL}${item.ProductImages?.[0]?.url || '/placeholder.jpg'}`}
+                  alt="preview"
+                  style={{ width: '80px', height: '80px', objectFit: 'cover' }}
+                />
+                <div>
+                  <strong>{item.name}</strong> – {item.price}₽{' '}
+                  [{item.is_active ? '🟢 Активен' : '🔴 Неактивен'}]
+                  <br />
+                  Категория: {item.Category?.name || 'Без категории'}
+                  <br />
+                  Размеры: {item.available_sizes.join(', ') || 'Нет размеров'}
+                </div>
               </div>
             )}
             {type === 'category' && `${item.name}`}
@@ -145,24 +153,47 @@ function AdminPanel() {
       <h1>Админ-панель</h1>
 
       <h2>Продукты</h2>
-      <div>
-        <label>Сортировка:</label>
-        <select value={productSort} onChange={(e) => setProductSort(e.target.value)}>
-          <option value="price">По цене</option>
-          <option value="name">По названию</option>
-          <option value="created_at">По дате</option>
-        </select>
-        <select value={productOrder} onChange={(e) => setProductOrder(e.target.value)}>
-          <option value="ASC">По возрастанию</option>
-          <option value="DESC">По убыванию</option>
-        </select>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <div>
+          <label>Фильтр по категории:</label>
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+            <option value="">Все категории</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label>Сортировка:</label>
+          <select value={productSort} onChange={(e) => setProductSort(e.target.value)}>
+            <option value="price">По цене</option>
+            <option value="name">По названию</option>
+            <option value="created_at">По дате</option>
+          </select>
+          <select value={productOrder} onChange={(e) => setProductOrder(e.target.value)}>
+            <option value="ASC">По возрастанию</option>
+            <option value="DESC">По убыванию</option>
+          </select>
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            Показывать неактивные товары
+          </label>
+        </div>
       </div>
       <ProductForm onSave={handleSave} />
       {products.length === 0 ? (
         <p>Продукты отсутствуют</p>
       ) : (
         <>
-          <ul>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
             {products.map((product) =>
               renderItem('product', product, editProductId, ProductForm, { productId: product.id })
             )}
@@ -281,18 +312,6 @@ function AdminPanel() {
           </div>
         </>
       )}
-
-      {/* <h2>Рефералы</h2>
-      <ReferralForm onSave={fetchData} />
-      <ul>
-        {referrals.map((referral) => (
-          <li key={referral.id}>
-            Пригласивший: {referral.Inviter?.email} - Приглашенный: {referral.Invited?.email}
-            <button onClick={() => handleDelete('/referrals', referral.id)}>Удалить</button>
-            <ReferralForm referralId={referral.id} onSave={fetchData} />
-          </li>
-        ))}
-      </ul> */}
     </div>
   );
 }

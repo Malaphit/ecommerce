@@ -14,6 +14,8 @@ function ProductForm({ productId, onSave }) {
   const [files, setFiles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [errors, setErrors] = useState({});
+  const [selectedImages, setSelectedImages] = useState([]); 
+  const [draggingIndex, setDraggingIndex] = useState(null); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,6 +97,7 @@ function ProductForm({ productId, onSave }) {
         images: [],
       });
       setFiles([]);
+      setSelectedImages([]);
       setErrors({});
       onSave();
     } catch (error) {
@@ -134,10 +137,62 @@ function ProductForm({ productId, onSave }) {
         ...prev,
         images: prodRes.data.ProductImages || [],
       }));
+      setSelectedImages(selectedImages.filter((id) => id !== imageId));
       setErrors((prev) => ({ ...prev, images: null }));
     } catch (error) {
       setErrors({ images: error.response?.data?.message || 'Ошибка удаления изображения' });
     }
+  };
+
+  const handleBulkDeleteImages = async () => {
+    if (!productId || selectedImages.length === 0) return;
+    try {
+      await api.delete(`/products/${productId}/images`, { data: { imageIds: selectedImages } });
+      const prodRes = await api.get(`/products/${productId}`);
+      setFormData((prev) => ({
+        ...prev,
+        images: prodRes.data.ProductImages || [],
+      }));
+      setSelectedImages([]);
+      setErrors((prev) => ({ ...prev, images: null }));
+    } catch (error) {
+      setErrors({ images: error.response?.data?.message || 'Ошибка массового удаления изображений' });
+    }
+  };
+
+  const toggleSelectImage = (imageId) => {
+    setSelectedImages((prev) =>
+      prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
+    );
+  };
+
+  const handleDragStart = (index) => {
+    setDraggingIndex(index);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (index) => {
+    if (draggingIndex === null || draggingIndex === index) return;
+    const newImages = [...formData.images];
+    const [draggedImage] = newImages.splice(draggingIndex, 1);
+    newImages.splice(index, 0, draggedImage);
+    setFormData((prev) => ({ ...prev, images: newImages }));
+
+    try {
+      const positions = newImages.map((img, i) => ({ id: img.id, position: i }));
+      await api.put(`/products/${productId}/images/positions`, { positions });
+    } catch (error) {
+      setErrors({ images: 'Ошибка обновления порядка изображений' });
+      const prodRes = await api.get(`/products/${productId}`);
+      setFormData((prev) => ({
+        ...prev,
+        images: prodRes.data.ProductImages || [],
+      }));
+    }
+    setDraggingIndex(null);
   };
 
   const sizes = Array.from({ length: 13 }, (_, i) => 36 + i); // 36–48
@@ -212,24 +267,60 @@ function ProductForm({ productId, onSave }) {
           <label>Изображения (до 10):</label>
           <input type="file" multiple accept="image/*" onChange={handleFileChange} />
           {files.length > 0 && (
-            <ul>
-              {files.map((file, index) => (
-                <li key={index}>
-                  {file.name}
-                  <button type="button" onClick={() => removeFile(index)}>
-                    Удалить
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              <h3>Предпросмотр новых изображений</h3>
+              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {files.map((file, index) => (
+                  <li key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt="Preview"
+                      style={{ width: '100px', height: 'auto', objectFit: 'cover' }}
+                    />
+                    <span>{file.name}</span>
+                    <button type="button" onClick={() => removeFile(index)}>
+                      Удалить
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           {errors.files && <p style={{ color: 'red' }}>{errors.files}</p>}
           {formData.images.length > 0 && (
             <>
               <h3>Текущие изображения</h3>
+              <div style={{ marginBottom: '10px' }}>
+                <button
+                  type="button"
+                  onClick={handleBulkDeleteImages}
+                  disabled={selectedImages.length === 0}
+                  style={{ background: selectedImages.length ? 'red' : 'grey', color: 'white', padding: '5px 10px' }}
+                >
+                  Удалить выбранные ({selectedImages.length})
+                </button>
+              </div>
               <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {formData.images.map((img) => (
-                  <li key={img.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {formData.images.map((img, index) => (
+                  <li
+                    key={img.id}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={() => handleDrop(index)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      cursor: 'move',
+                      background: draggingIndex === index ? '#f0f0f0' : 'transparent',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedImages.includes(img.id)}
+                      onChange={() => toggleSelectImage(img.id)}
+                    />
                     <img
                       src={`${process.env.REACT_APP_API_URL}${img.url}`}
                       alt="Product"

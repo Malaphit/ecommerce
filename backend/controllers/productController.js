@@ -4,9 +4,12 @@ const path = require('path');
 
 exports.getProducts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, sort = 'created_at', order = 'DESC', search } = req.query;
+    const { page = 1, limit = 10, sort = 'created_at', order = 'DESC', search, category_id, is_active } = req.query;
     const offset = (page - 1) * limit;
-    const where = search ? { name: { [Op.iLike]: `%${search}%` } } : {};
+    const where = {};
+    if (search) where.name = { [Op.iLike]: `%${search}%` };
+    if (category_id) where.category_id = category_id;
+    if (is_active !== undefined && is_active !== '') where.is_active = is_active === 'true';
 
     const { count, rows } = await Product.findAndCountAll({
       where,
@@ -61,38 +64,28 @@ exports.deleteProduct = async (req, res) => {
 exports.uploadProductImages = async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
-    if (!product) {
-      console.log('Продукт не найден');
-      return res.status(404).json({ message: 'Продукт не найден' });
-    }
+    if (!product) return res.status(404).json({ message: 'Продукт не найден' });
 
     const files = req.files;
-    if (!files || files.length === 0) {
-      console.log('Файлы не предоставлены');
-      return res.status(400).json({ message: 'Файлы не предоставлены' });
-    }
-
-    console.log('Файлы:', files);
+    if (!files || files.length === 0) return res.status(400).json({ message: 'Файлы не предоставлены' });
 
     const currentImages = await ProductImage.findAll({ where: { product_id: product.id } });
     if (currentImages.length + files.length > 10) {
-      console.log('Превышен лимит изображений');
       return res.status(400).json({ message: 'Максимум 10 изображений' });
     }
 
     const images = [];
     for (const file of files) {
-      console.log(`Сохраняем файл: ${file.filename}`);
       const image = await ProductImage.create({
         product_id: product.id,
         url: `/uploads/${file.filename}`,
+        position: currentImages.length + images.length,
       });
       images.push(image);
     }
 
     res.status(201).json(images);
   } catch (error) {
-    console.error('Ошибка при загрузке изображений:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -102,7 +95,7 @@ exports.getProductById = async (req, res) => {
     const product = await Product.findByPk(req.params.id, {
       include: [
         { model: Category, attributes: ['id', 'name'] },
-        { model: ProductImage },
+        { model: ProductImage, order: [['position', 'ASC']] },
       ],
     });
     if (!product) return res.status(404).json({ message: 'Продукт не найден' });
@@ -129,6 +122,81 @@ exports.deleteProductImage = async (req, res) => {
 
     await image.destroy();
     res.json({ message: 'Изображение удалено' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.bulkDeleteProductImages = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { imageIds } = req.body;
+    if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+      return res.status(400).json({ message: 'Не указаны ID изображений' });
+    }
+
+    const images = await ProductImage.findAll({
+      where: { id: { [Op.in]: imageIds }, product_id: productId },
+    });
+    if (images.length === 0) return res.status(404).json({ message: 'Изображения не найдены' });
+
+    for (const image of images) {
+      const filePath = path.join(__dirname, '..', 'Uploads', path.basename(image.url));
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      } else {
+        console.warn(`File not found: ${filePath}`);
+      }
+      await image.destroy();
+    }
+
+    res.json({ message: 'Изображения удалены' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateImagePositions = async (req, res) => {
+  try {
+    const { id: productId } = req.params;
+    const { positions } = req.body;
+    if (!positions || !Array.isArray(positions)) {
+      return res.status(400).json({ message: 'Неверный формат данных позиций' });
+    }
+
+    const product = await Product.findByPk(productId);
+    if (!product) return res.status(404).json({ message: 'Продукт не найден' });
+
+    for (const { id, position } of positions) {
+      const image = await ProductImage.findOne({ where: { id, product_id: productId } });
+      if (image) {
+        await image.update({ position });
+      }
+    }
+
+    res.json({ message: 'Позиции обновлены' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.cleanupUnusedImages = async (req, res) => {
+  try {
+    const uploadDir = path.join(__dirname, '..', 'Uploads');
+    const files = fs.readdirSync(uploadDir);
+    const imageUrls = await ProductImage.findAll({ attributes: ['url'] });
+    const usedFilenames = imageUrls.map((img) => path.basename(img.url));
+
+    let deletedCount = 0;
+    for (const file of files) {
+      if (!usedFilenames.includes(file)) {
+        const filePath = path.join(uploadDir, file);
+        fs.unlinkSync(filePath);
+        deletedCount++;
+      }
+    }
+
+    res.json({ message: `Удалено ${deletedCount} неиспользуемых файлов` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
