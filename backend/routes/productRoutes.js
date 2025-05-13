@@ -17,7 +17,6 @@ router.put('/:id', authenticate, authorize(['admin']), productController.updateP
 router.delete('/:id', authenticate, authorize(['admin']), productController.deleteProduct);
 router.post('/:id/images', authenticate, authorize(['admin']), upload.array('images', 10), productController.uploadProductImages);
 router.delete('/:productId/images/:imageId', authenticate, authorize(['admin']), productController.deleteProductImage);
-router.delete('/:productId/images', authenticate, authorize(['admin']), productController.bulkDeleteProductImages);
 router.put('/:id/images/positions', authenticate, authorize(['admin']), productController.updateImagePositions);
 router.post('/cleanup-images', authenticate, authorize(['admin']), productController.cleanupUnusedImages);
 

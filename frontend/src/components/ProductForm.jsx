@@ -14,8 +14,7 @@ function ProductForm({ productId, onSave }) {
   const [files, setFiles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [errors, setErrors] = useState({});
-  const [selectedImages, setSelectedImages] = useState([]); 
-  const [draggingIndex, setDraggingIndex] = useState(null); 
+  const [draggingIndex, setDraggingIndex] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,7 +36,7 @@ function ProductForm({ productId, onSave }) {
           });
         }
       } catch (error) {
-        setErrors({ general: 'Ошибка загрузки данных' });
+        setErrors({ general: error.response?.data?.message || 'Ошибка загрузки данных' });
       }
     };
     fetchData();
@@ -97,7 +96,6 @@ function ProductForm({ productId, onSave }) {
         images: [],
       });
       setFiles([]);
-      setSelectedImages([]);
       setErrors({});
       onSave();
     } catch (error) {
@@ -137,33 +135,10 @@ function ProductForm({ productId, onSave }) {
         ...prev,
         images: prodRes.data.ProductImages || [],
       }));
-      setSelectedImages(selectedImages.filter((id) => id !== imageId));
       setErrors((prev) => ({ ...prev, images: null }));
     } catch (error) {
       setErrors({ images: error.response?.data?.message || 'Ошибка удаления изображения' });
     }
-  };
-
-  const handleBulkDeleteImages = async () => {
-    if (!productId || selectedImages.length === 0) return;
-    try {
-      await api.delete(`/products/${productId}/images`, { data: { imageIds: selectedImages } });
-      const prodRes = await api.get(`/products/${productId}`);
-      setFormData((prev) => ({
-        ...prev,
-        images: prodRes.data.ProductImages || [],
-      }));
-      setSelectedImages([]);
-      setErrors((prev) => ({ ...prev, images: null }));
-    } catch (error) {
-      setErrors({ images: error.response?.data?.message || 'Ошибка массового удаления изображений' });
-    }
-  };
-
-  const toggleSelectImage = (imageId) => {
-    setSelectedImages((prev) =>
-      prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
-    );
   };
 
   const handleDragStart = (index) => {
@@ -185,7 +160,7 @@ function ProductForm({ productId, onSave }) {
       const positions = newImages.map((img, i) => ({ id: img.id, position: i }));
       await api.put(`/products/${productId}/images/positions`, { positions });
     } catch (error) {
-      setErrors({ images: 'Ошибка обновления порядка изображений' });
+      setErrors({ images: error.response?.data?.message || 'Ошибка обновления порядка изображений' });
       const prodRes = await api.get(`/products/${productId}`);
       setFormData((prev) => ({
         ...prev,
@@ -195,7 +170,7 @@ function ProductForm({ productId, onSave }) {
     setDraggingIndex(null);
   };
 
-  const sizes = Array.from({ length: 13 }, (_, i) => 36 + i); // 36–48
+  const sizes = Array.from({ length: 13 }, (_, i) => 36 + i);
 
   return (
     <div>
@@ -269,58 +244,54 @@ function ProductForm({ productId, onSave }) {
           {files.length > 0 && (
             <>
               <h3>Предпросмотр новых изображений</h3>
-              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                  gap: '10px',
+                  marginBottom: '10px',
+                }}
+              >
                 {files.map((file, index) => (
-                  <li key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div key={index} style={{ textAlign: 'center' }}>
                     <img
                       src={URL.createObjectURL(file)}
                       alt="Preview"
                       style={{ width: '100px', height: 'auto', objectFit: 'cover' }}
                     />
-                    <span>{file.name}</span>
+                    <p style={{ fontSize: '12px', wordBreak: 'break-all' }}>{file.name}</p>
                     <button type="button" onClick={() => removeFile(index)}>
                       Удалить
                     </button>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </>
           )}
           {errors.files && <p style={{ color: 'red' }}>{errors.files}</p>}
           {formData.images.length > 0 && (
             <>
               <h3>Текущие изображения</h3>
-              <div style={{ marginBottom: '10px' }}>
-                <button
-                  type="button"
-                  onClick={handleBulkDeleteImages}
-                  disabled={selectedImages.length === 0}
-                  style={{ background: selectedImages.length ? 'red' : 'grey', color: 'white', padding: '5px 10px' }}
-                >
-                  Удалить выбранные ({selectedImages.length})
-                </button>
-              </div>
-              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                  gap: '10px',
+                }}
+              >
                 {formData.images.map((img, index) => (
-                  <li
+                  <div
                     key={img.id}
                     draggable
                     onDragStart={() => handleDragStart(index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDrop={() => handleDrop(index)}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
+                      textAlign: 'center',
                       cursor: 'move',
                       background: draggingIndex === index ? '#f0f0f0' : 'transparent',
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={selectedImages.includes(img.id)}
-                      onChange={() => toggleSelectImage(img.id)}
-                    />
                     <img
                       src={`${process.env.REACT_APP_API_URL}${img.url}`}
                       alt="Product"
@@ -329,9 +300,9 @@ function ProductForm({ productId, onSave }) {
                     <button type="button" onClick={() => handleDeleteImage(img.id)}>
                       Удалить
                     </button>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
               {errors.images && <p style={{ color: 'red' }}>{errors.images}</p>}
             </>
           )}

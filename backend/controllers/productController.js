@@ -78,7 +78,7 @@ exports.uploadProductImages = async (req, res) => {
     for (const file of files) {
       const image = await ProductImage.create({
         product_id: product.id,
-        url: `/uploads/${file.filename}`,
+        url: `/Uploads/${file.filename}`,
         position: currentImages.length + images.length,
       });
       images.push(image);
@@ -113,44 +113,17 @@ exports.deleteProductImage = async (req, res) => {
     });
     if (!image) return res.status(404).json({ message: 'Изображение не найдено' });
 
-    const filePath = path.join(__dirname, '..', 'uploads', path.basename(image.url));
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    } else {
-      console.warn(`File not found: ${filePath}`);
+    const filePath = path.join(__dirname, '..', 'Uploads', path.basename(image.url));
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (fileError) {
+      console.warn(`File not found or error deleting: ${filePath}`);
     }
 
     await image.destroy();
     res.json({ message: 'Изображение удалено' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.bulkDeleteProductImages = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const { imageIds } = req.body;
-    if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
-      return res.status(400).json({ message: 'Не указаны ID изображений' });
-    }
-
-    const images = await ProductImage.findAll({
-      where: { id: { [Op.in]: imageIds }, product_id: productId },
-    });
-    if (images.length === 0) return res.status(404).json({ message: 'Изображения не найдены' });
-
-    for (const image of images) {
-      const filePath = path.join(__dirname, '..', 'Uploads', path.basename(image.url));
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      } else {
-        console.warn(`File not found: ${filePath}`);
-      }
-      await image.destroy();
-    }
-
-    res.json({ message: 'Изображения удалены' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -191,8 +164,12 @@ exports.cleanupUnusedImages = async (req, res) => {
     for (const file of files) {
       if (!usedFilenames.includes(file)) {
         const filePath = path.join(uploadDir, file);
-        fs.unlinkSync(filePath);
-        deletedCount++;
+        try {
+          fs.unlinkSync(filePath);
+          deletedCount++;
+        } catch (fileError) {
+          console.warn(`File not found or error deleting: ${filePath}`);
+        }
       }
     }
 
