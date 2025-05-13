@@ -9,6 +9,7 @@ function ProductForm({ productId, onSave }) {
     description: '',
     available_sizes: [],
     is_active: true,
+    images: [],
   });
   const [files, setFiles] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -22,7 +23,7 @@ function ProductForm({ productId, onSave }) {
         setCategories(Array.isArray(categoryList) ? categoryList : []);
         if (productId) {
           const prodRes = await api.get(`/products/${productId}`);
-          const data = prodRes.data.product || prodRes.data; 
+          const data = prodRes.data.product || prodRes.data;
           setFormData({
             category_id: data.category_id || '',
             name: data.name || '',
@@ -30,6 +31,7 @@ function ProductForm({ productId, onSave }) {
             price: data.price || '',
             available_sizes: data.available_sizes || [],
             is_active: data.is_active !== undefined ? data.is_active : true,
+            images: data.ProductImages || [],
           });
         }
       } catch (error) {
@@ -55,7 +57,14 @@ function ProductForm({ productId, onSave }) {
     e.preventDefault();
     if (!validate()) return;
     try {
-      const payload = { ...formData };
+      const payload = {
+        name: formData.name,
+        category_id: formData.category_id,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        available_sizes: formData.available_sizes,
+        is_active: formData.is_active,
+      };
       let product;
       if (productId) {
         product = await api.put(`/products/${productId}`, payload);
@@ -69,15 +78,21 @@ function ProductForm({ productId, onSave }) {
         await api.post(`/products/${product.data.id}/images`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
+        const prodRes = await api.get(`/products/${product.data.id}`);
+        setFormData((prev) => ({
+          ...prev,
+          images: prodRes.data.ProductImages || [],
+        }));
       }
 
       setFormData({
-        category_id: '',
         name: '',
-        description: '',
+        category_id: '',
         price: '',
+        description: '',
         available_sizes: [],
         is_active: true,
+        images: [],
       });
       setFiles([]);
       setErrors({});
@@ -98,7 +113,7 @@ function ProductForm({ productId, onSave }) {
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
-    if (selectedFiles.length + files.length > 10) {
+    if (selectedFiles.length + files.length + formData.images.length > 10) {
       setErrors({ files: 'Максимум 10 изображений' });
       return;
     }
@@ -108,6 +123,21 @@ function ProductForm({ productId, onSave }) {
 
   const removeFile = (index) => {
     setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    if (!productId) return;
+    try {
+      await api.delete(`/products/${productId}/images/${imageId}`);
+      const prodRes = await api.get(`/products/${productId}`);
+      setFormData((prev) => ({
+        ...prev,
+        images: prodRes.data.ProductImages || [],
+      }));
+      setErrors((prev) => ({ ...prev, images: null }));
+    } catch (error) {
+      setErrors({ images: error.response?.data?.message || 'Ошибка удаления изображения' });
+    }
   };
 
   const sizes = Array.from({ length: 13 }, (_, i) => 36 + i); // 36–48
@@ -194,6 +224,26 @@ function ProductForm({ productId, onSave }) {
             </ul>
           )}
           {errors.files && <p style={{ color: 'red' }}>{errors.files}</p>}
+          {formData.images.length > 0 && (
+            <>
+              <h3>Текущие изображения</h3>
+              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {formData.images.map((img) => (
+                  <li key={img.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img
+                      src={`${process.env.REACT_APP_API_URL}${img.url}`}
+                      alt="Product"
+                      style={{ width: '100px', height: 'auto', objectFit: 'cover' }}
+                    />
+                    <button type="button" onClick={() => handleDeleteImage(img.id)}>
+                      Удалить
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {errors.images && <p style={{ color: 'red' }}>{errors.images}</p>}
+            </>
+          )}
         </div>
         <div>
           <label>Активен:</label>

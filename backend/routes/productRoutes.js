@@ -11,10 +11,13 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.get('/', productController.getProducts);
+router.get('/:id', productController.getProductById);
 router.post('/', authenticate, authorize(['admin']), productController.createProduct);
 router.put('/:id', authenticate, authorize(['admin']), productController.updateProduct);
 router.delete('/:id', authenticate, authorize(['admin']), productController.deleteProduct);
-router.get('/:id', productController.getProductById);
-router.post('/:id/images',authenticate,authorize(['admin']),upload.array('images', 10),productController.uploadProductImages);
+router.post('/:id/images', authenticate, authorize(['admin']), upload.array('images', 10), productController.uploadProductImages
+);
+router.delete('/:productId/images/:imageId', authenticate, authorize(['admin']), productController.deleteProductImage
+);
 
 module.exports = router;

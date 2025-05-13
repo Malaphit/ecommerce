@@ -19,7 +19,6 @@ function Register() {
     e.preventDefault();
     try {
       await api.post('/auth/register', formData);
-      // Auto-login after registration
       await login(formData.email, formData.password);
       navigate('/profile');
     } catch (err) {
