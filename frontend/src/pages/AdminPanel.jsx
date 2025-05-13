@@ -14,10 +14,18 @@ function AdminPanel() {
   // const [referrals, setReferrals] = useState([]);
   const [userSearch, setUserSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('');
+  const [productPage, setProductPage] = useState(1);
+  const [categoryPage, setCategoryPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
+  const [productPagination, setProductPagination] = useState({ total: 0, pages: 1 });
+  const [categoryPagination, setCategoryPagination] = useState({ total: 0, pages: 1 });
   const [userPagination, setUserPagination] = useState({ total: 0, pages: 1 });
   const [orderPagination, setOrderPagination] = useState({ total: 0, pages: 1 });
+  const [productSort, setProductSort] = useState('price');
+  const [productOrder, setProductOrder] = useState('ASC');
+  const [orderSort, setOrderSort] = useState('created_at');
+  const [orderOrder, setOrderOrder] = useState('DESC');
   const [editProductId, setEditProductId] = useState(null);
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [editOrderId, setEditOrderId] = useState(null);
@@ -27,23 +35,40 @@ function AdminPanel() {
   const fetchData = useCallback(async () => {
     try {
       const [prodRes, catRes, ordRes, userRes] = await Promise.all([
-        api.get('/products'),
-        api.get('/categories'),
-        api.get(`/orders?status=${orderStatusFilter}&page=${orderPage}&limit=${limit}`),
+        api.get(`/products?page=${productPage}&limit=${limit}&sort=${productSort}&order=${productOrder}`),
+        api.get(`/categories?page=${categoryPage}&limit=${limit}`),
+        api.get(`/orders?status=${orderStatusFilter}&page=${orderPage}&limit=${limit}&sort=${orderSort}&order=${orderOrder}`),
         api.get(`/users?email=${userSearch}&page=${userPage}&limit=${limit}`),
         // api.get('/referrals'),
       ]);
-      setProducts(prodRes.data);
-      setCategories(catRes.data);
-      setOrders(ordRes.data.orders || ordRes.data);
+      setProducts(Array.isArray(prodRes.data.products) ? prodRes.data.products : []);
+      setProductPagination({ total: prodRes.data.total, pages: prodRes.data.pages });
+      setCategories(Array.isArray(catRes.data.categories) ? catRes.data.categories : []);
+      setCategoryPagination({ total: catRes.data.total, pages: catRes.data.pages });
+      setOrders(Array.isArray(ordRes.data.orders) ? ordRes.data.orders : []);
       setOrderPagination({ total: ordRes.data.total, pages: ordRes.data.pages });
-      setUsers(userRes.data.users || userRes.data);
+      setUsers(Array.isArray(userRes.data.users) ? userRes.data.users : []);
       setUserPagination({ total: userRes.data.total, pages: userRes.data.pages });
+      setProductPagination({
+        total: prodRes.data.total || 0,
+        pages: prodRes.data.pages || 1,
+      });
       // setReferrals(refRes.data);
     } catch (error) {
       alert('Ошибка загрузки данных: ' + (error.response?.data?.message || 'Ошибка сервера'));
     }
-  }, [orderStatusFilter, orderPage, userSearch, userPage]);
+  }, [
+    productPage,
+    categoryPage,
+    orderPage,
+    userPage,
+    productSort,
+    productOrder,
+    orderSort,
+    orderOrder,
+    orderStatusFilter,
+    userSearch,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -93,7 +118,15 @@ function AdminPanel() {
           <FormComponent {...formProps} onSave={handleSave} />
         ) : (
           <>
-            {type === 'product' && `${item.name} - ${item.price} ₽ (Категория: ${item.Category?.name || 'Без категории'})`}
+            {type === 'product' && (
+              <div>
+                <strong>{item.name}</strong> - {item.price} ₽
+                <br />
+                Категория: {item.Category?.name || 'Без категории'}
+                <br />
+                Размеры: {item.available_sizes.join(', ') || 'Нет размеров'}
+              </div>
+            )}
             {type === 'category' && `${item.name}`}
             {type === 'order' && `Заказ #${item.id} - Статус: ${item.status} - Сумма: ${item.total_price} ₽`}
             {type === 'user' && `${item.email} - ${item.role}`}
@@ -112,15 +145,41 @@ function AdminPanel() {
       <h1>Админ-панель</h1>
 
       <h2>Продукты</h2>
+      <div>
+        <label>Сортировка:</label>
+        <select value={productSort} onChange={(e) => setProductSort(e.target.value)}>
+          <option value="price">По цене</option>
+          <option value="name">По названию</option>
+          <option value="created_at">По дате</option>
+        </select>
+        <select value={productOrder} onChange={(e) => setProductOrder(e.target.value)}>
+          <option value="ASC">По возрастанию</option>
+          <option value="DESC">По убыванию</option>
+        </select>
+      </div>
       <ProductForm onSave={handleSave} />
       {products.length === 0 ? (
         <p>Продукты отсутствуют</p>
       ) : (
-        <ul>
-          {products.map((product) =>
-            renderItem('product', product, editProductId, ProductForm, { productId: product.id })
-          )}
-        </ul>
+        <>
+          <ul>
+            {products.map((product) =>
+              renderItem('product', product, editProductId, ProductForm, { productId: product.id })
+            )}
+          </ul>
+          <div>
+            <button disabled={productPage === 1} onClick={() => setProductPage(productPage - 1)}>
+              Назад
+            </button>
+            <span>Страница {productPage} из {productPagination.pages}</span>
+            <button
+              disabled={productPage === productPagination.pages}
+              onClick={() => setProductPage(productPage + 1)}
+            >
+              Вперед
+            </button>
+          </div>
+        </>
       )}
 
       <h2>Категории</h2>
@@ -128,11 +187,25 @@ function AdminPanel() {
       {categories.length === 0 ? (
         <p>Категории отсутствуют</p>
       ) : (
-        <ul>
-          {categories.map((category) =>
-            renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id })
-          )}
-        </ul>
+        <>
+          <ul>
+            {categories.map((category) =>
+              renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id })
+            )}
+          </ul>
+          <div>
+            <button disabled={categoryPage === 1} onClick={() => setCategoryPage(categoryPage - 1)}>
+              Назад
+            </button>
+            <span>Страница {categoryPage} из {categoryPagination.pages}</span>
+            <button
+              disabled={categoryPage === categoryPagination.pages}
+              onClick={() => setCategoryPage(categoryPage + 1)}
+            >
+              Вперед
+            </button>
+          </div>
+        </>
       )}
 
       <h2>Заказы</h2>
@@ -144,6 +217,15 @@ function AdminPanel() {
           <option value="shipped">Отправлен</option>
           <option value="delivered">Доставлен</option>
           <option value="cancelled">Отменен</option>
+        </select>
+        <label>Сортировка:</label>
+        <select value={orderSort} onChange={(e) => setOrderSort(e.target.value)}>
+          <option value="created_at">По дате</option>
+          <option value="total_price">По сумме</option>
+        </select>
+        <select value={orderOrder} onChange={(e) => setOrderOrder(e.target.value)}>
+          <option value="ASC">По возрастанию</option>
+          <option value="DESC">По убыванию</option>
         </select>
       </div>
       <OrderForm onSave={handleSave} />
@@ -173,7 +255,7 @@ function AdminPanel() {
         <label>Поиск по email:</label>
         <input
           type="text"
-          value={userSearch}
+          value={userSearch || ''}
           onChange={(e) => setUserSearch(e.target.value)}
           placeholder="Введите email"
         />

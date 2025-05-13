@@ -2,8 +2,21 @@ const { Category } = require('../models');
 
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await Category.findAll();
-    res.json(categories);
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Category.findAndCountAll({
+      order: [['weight', 'ASC']],
+      limit,
+      offset,
+    });
+
+    res.json({
+      categories: rows,
+      total: count,
+      page: parseInt(page),
+      pages: Math.ceil(count / limit),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

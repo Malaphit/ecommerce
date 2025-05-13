@@ -1,30 +1,29 @@
 const { Order, User, Address, OrderItem, Product, Op } = require('../models');
 
 exports.getOrders = async (req, res) => {
-    try {
-      const { status, user_id, page = 1, limit = 10 } = req.query;
-      const where = {};
-      if (status) where.status = status;
-      if (user_id) where.user_id = user_id;
-  
-      const offset = (page - 1) * limit;
-      const { count, rows } = await Order.findAndCountAll({
-        where,
-        include: [User, Address, { model: OrderItem, include: [Product] }],
-        limit,
-        offset,
-      });
-  
-      res.json({
-        orders: rows,
-        total: count,
-        page: parseInt(page),
-        pages: Math.ceil(count / limit),
-      });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  };
+  try {
+    const { page = 1, limit = 10, status, sort = 'created_at', order = 'DESC' } = req.query;
+    const offset = (page - 1) * limit;
+    const where = status ? { status } : {};
+
+    const { count, rows } = await Order.findAndCountAll({
+      where,
+      include: [{ model: User, attributes: ['id', 'email'] }, { model: Address }],
+      order: [[sort, order]],
+      limit,
+      offset,
+    });
+
+    res.json({
+      orders: rows,
+      total: count,
+      page: parseInt(page),
+      pages: Math.ceil(count / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 exports.createOrder = async (req, res) => {
   try {

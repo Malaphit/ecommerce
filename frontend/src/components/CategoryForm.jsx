@@ -7,18 +7,26 @@ function CategoryForm({ categoryId, onSave }) {
 
   useEffect(() => {
     if (categoryId) {
-      api.get(`/categories/${categoryId}`)
-        .then((response) => setFormData(response.data))
-        .catch(() => alert('Ошибка загрузки категории'));
+      api
+        .get(`/categories/${categoryId}`)
+        .then((response) => {
+          const data = response.data.category || response.data; // безопасный доступ
+          setFormData({
+            name: data.name || '',
+            description: data.description || '',
+            weight: data.weight || 0,
+          });
+        })
+        .catch(() => setErrors({ general: 'Ошибка загрузки категории' }));
     }
   }, [categoryId]);
 
   const validate = () => {
     const newErrors = {};
     if (!formData.name) newErrors.name = 'Название обязательно';
-    if (formData.name && formData.name.length > 100) newErrors.name = 'Название слишком длинное';
-    if (formData.description && formData.description.length > 500) newErrors.description = 'Описание слишком длинное';
-    if (formData.weight && isNaN(formData.weight)) newErrors.weight = 'Вес должен быть числом';
+    if (formData.name.length > 100) newErrors.name = 'Название слишком длинное';
+    if (formData.description.length > 500) newErrors.description = 'Описание слишком длинное';
+    if (isNaN(formData.weight)) newErrors.weight = 'Вес должен быть числом';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -32,47 +40,51 @@ function CategoryForm({ categoryId, onSave }) {
       } else {
         await api.post('/categories', formData);
       }
-      onSave();
       setFormData({ name: '', description: '', weight: 0 });
       setErrors({});
+      onSave();
     } catch (error) {
-      alert('Ошибка сохранения категории: ' + (error.response?.data?.message || 'Ошибка сервера'));
+      setErrors({ general: error.response?.data?.message || 'Ошибка сохранения категории' });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Название:</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Название категории"
-        />
-        {errors.name && <p style={{ color: 'red' }}>{errors.name}</p>}
-      </div>
-      <div>
-        <label>Описание:</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Описание категории"
-        />
-        {errors.description && <p style={{ color: 'red' }}>{errors.description}</p>}
-      </div>
-      <div>
-        <label>Вес:</label>
-        <input
-          type="number"
-          value={formData.weight}
-          onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-          placeholder="Вес категории"
-        />
-        {errors.weight && <p style={{ color: 'red' }}>{errors.weight}</p>}
-      </div>
-      <button type="submit">Сохранить</button>
-    </form>
+    <div>
+      <h2>{categoryId ? 'Редактировать категорию' : 'Добавить категорию'}</h2>
+      {errors.general && <p style={{ color: 'red' }}>{errors.general}</p>}
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Название:</label>
+          <input
+            type="text"
+            value={formData.name || ''}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Название категории"
+          />
+          {errors.name && <p style={{ color: 'red' }}>{errors.name}</p>}
+        </div>
+        <div>
+          <label>Описание:</label>
+          <textarea
+            value={formData.description || ''}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Описание категории"
+          />
+          {errors.description && <p style={{ color: 'red' }}>{errors.description}</p>}
+        </div>
+        <div>
+          <label>Вес:</label>
+          <input
+            type="number"
+            value={formData.weight || 0}
+            onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+            placeholder="Вес категории"
+          />
+          {errors.weight && <p style={{ color: 'red' }}>{errors.weight}</p>}
+        </div>
+        <button type="submit">Сохранить</button>
+      </form>
+    </div>
   );
 }
 

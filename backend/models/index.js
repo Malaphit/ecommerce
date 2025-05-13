@@ -84,15 +84,15 @@ const Product = sequelize.define('Product', {
 
 const ProductImage = sequelize.define('ProductImage', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  product_id: { type: DataTypes.INTEGER, allowNull: false },
-  url: { type: DataTypes.STRING(255), allowNull: false, validate: { notEmpty: true } },
-  position: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, validate: { min: 0 } },
+  url: { type: DataTypes.STRING, allowNull: false },
+  product_id: {type: DataTypes.INTEGER,allowNull: false,references: { model: 'Products', key: 'id', } },
+  position: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 }, {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: false,
-  indexes: [{ fields: ['product_id'] }],
 });
+
 
 const Order = sequelize.define('Order', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },

@@ -16,18 +16,21 @@ function OrderForm({ orderId, onSave }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [userRes, addressRes] = await Promise.all([
-          api.get('/users'),
-          api.get('/addresses'),
-        ]);
+        const [userRes, addressRes] = await Promise.all([api.get('/users'), api.get('/addresses')]);
         setUsers(Array.isArray(userRes.data) ? userRes.data : []);
-        setAddresses(addressRes.data);
+        setAddresses(Array.isArray(addressRes.data) ? addressRes.data : []);
         if (orderId) {
           const orderRes = await api.get(`/orders/${orderId}`);
-          setFormData(orderRes.data);
+          setFormData({
+            user_id: orderRes.data.user_id || '',
+            total_price: orderRes.data.total_price || 0,
+            status: orderRes.data.status || 'pending',
+            address_id: orderRes.data.address_id || '',
+            tracking_number: orderRes.data.tracking_number || '',
+          });
         }
       } catch (error) {
-        alert('Ошибка загрузки данных');
+        setErrors({ general: 'Ошибка загрузки данных' });
       }
     };
     fetchData();
@@ -54,80 +57,84 @@ function OrderForm({ orderId, onSave }) {
       } else {
         await api.post('/orders', formData);
       }
-      onSave();
       setFormData({ user_id: '', total_price: 0, status: 'pending', address_id: '', tracking_number: '' });
       setErrors({});
+      onSave();
     } catch (error) {
-      alert('Ошибка сохранения заказа: ' + (error.response?.data?.message || 'Ошибка сервера'));
+      setErrors({ general: error.response?.data?.message || 'Ошибка сохранения заказа' });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Пользователь:</label>
-        <select
-          value={formData.user_id}
-          onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-        >
-          <option value="">Выберите пользователя</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.email}
-            </option>
-          ))}
-        </select>
-        {errors.user_id && <p style={{ color: 'red' }}>{errors.user_id}</p>}
-      </div>
-      <div>
-        <label>Общая сумма:</label>
-        <input
-          type="number"
-          value={formData.total_price}
-          onChange={(e) => setFormData({ ...formData, total_price: e.target.value })}
-          placeholder="Общая сумма"
-        />
-        {errors.total_price && <p style={{ color: 'red' }}>{errors.total_price}</p>}
-      </div>
-      <div>
-        <label>Статус:</label>
-        <select
-          value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-        >
-          <option value="pending">В обработке</option>
-          <option value="shipped">Отправлен</option>
-          <option value="delivered">Доставлен</option>
-          <option value="cancelled">Отменен</option>
-        </select>
-      </div>
-      <div>
-        <label>Адрес:</label>
-        <select
-          value={formData.address_id}
-          onChange={(e) => setFormData({ ...formData, address_id: e.target.value })}
-        >
-          <option value="">Выберите адрес</option>
-          {addresses.map((addr) => (
-            <option key={addr.id} value={addr.id}>
-              {addr.city}, {addr.street}, {addr.house}
-            </option>
-          ))}
-        </select>
-        {errors.address_id && <p style={{ color: 'red' }}>{errors.address_id}</p>}
-      </div>
-      <div>
-        <label>Трек-номер:</label>
-        <input
-          type="text"
-          value={formData.tracking_number}
-          onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
-          placeholder="Трек-номер"
-        />
-        {errors.tracking_number && <p style={{ color: 'red' }}>{errors.tracking_number}</p>}
-      </div>
-      <button type="submit">Сохранить</button>
-    </form>
+    <div>
+      <h2>{orderId ? 'Редактировать заказ' : 'Добавить заказ'}</h2>
+      {errors.general && <p style={{ color: 'red' }}>{errors.general}</p>}
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Пользователь:</label>
+          <select
+            value={formData.user_id || ''}
+            onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+          >
+            <option value="">Выберите пользователя</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.email}
+              </option>
+            ))}
+          </select>
+          {errors.user_id && <p style={{ color: 'red' }}>{errors.user_id}</p>}
+        </div>
+        <div>
+          <label>Общая сумма:</label>
+          <input
+            type="number"
+            value={formData.total_price || 0}
+            onChange={(e) => setFormData({ ...formData, total_price: e.target.value })}
+            placeholder="Общая сумма"
+          />
+          {errors.total_price && <p style={{ color: 'red' }}>{errors.total_price}</p>}
+        </div>
+        <div>
+          <label>Статус:</label>
+          <select
+            value={formData.status || 'pending'}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+          >
+            <option value="pending">В обработке</option>
+            <option value="shipped">Отправлен</option>
+            <option value="delivered">Доставлен</option>
+            <option value="cancelled">Отменен</option>
+          </select>
+        </div>
+        <div>
+          <label>Адрес:</label>
+          <select
+            value={formData.address_id || ''}
+            onChange={(e) => setFormData({ ...formData, address_id: e.target.value })}
+          >
+            <option value="">Выберите адрес</option>
+            {addresses.map((addr) => (
+              <option key={addr.id} value={addr.id}>
+                {addr.city}, {addr.street}, {addr.house}
+              </option>
+            ))}
+          </select>
+          {errors.address_id && <p style={{ color: 'red' }}>{errors.address_id}</p>}
+        </div>
+        <div>
+          <label>Трек-номер:</label>
+          <input
+            type="text"
+            value={formData.tracking_number || ''}
+            onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
+            placeholder="Трек-номер"
+          />
+          {errors.tracking_number && <p style={{ color: 'red' }}>{errors.tracking_number}</p>}
+        </div>
+        <button type="submit">Сохранить</button>
+      </form>
+    </div>
   );
 }
 
