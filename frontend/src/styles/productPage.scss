@@ -1,0 +1,129 @@
+.product-detail {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0px 40px auto;
+    background: $background-color;
+    color: $text-color;
+  }
+  
+  .product-detail h1 {
+    font-family: $font-family;
+    font-size: 2.5rem;
+    margin: 0 0 20px;
+    text-align: center;
+  }
+  
+  .product-content {
+    display: flex;
+    gap: 30px;
+  }
+  
+  .product-images {
+    flex: 1;
+    max-width: 600px;
+  }
+  
+  .main-image {
+    width: 100%;
+    height: 600px;
+    object-fit: cover;
+    border: 1px solid $border-color;
+    transition: $transition;
+  }
+  
+  .thumbnail-gallery {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 1px solid $border-color;
+    transition: $transition;
+  }
+  
+  .thumbnail.active,
+  .thumbnail:hover {
+    border-color: $accent-color;
+    transform: scale(1.05);
+  }
+  
+  .product-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    font-family: $font-family-secondary;
+    font-size: 1.1rem;
+  }
+  
+  .product-price {
+    color: $accent-color;
+    font-family: $font-family;
+    font-size: 1.5rem;
+  }
+  
+  .size-selector {
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .size-selector label {
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+  }
+  
+  .size-selector select {
+    padding: 8px;
+    border: 1px solid $border-color;
+    background: $secondary-bg;
+    color: $text-color;
+    font-family: $font-family-secondary;
+    cursor: pointer;
+    transition: $transition;
+  }
+  
+  .size-selector select:hover {
+    border-color: $accent-color;
+  }
+  
+  .add-to-cart {
+    padding: 12px 24px;
+    background: $accent-color;
+    color: $text-color;
+    border: none;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    cursor: pointer;
+    width: fit-content;
+    transition: $transition;
+  }
+  
+  .add-to-cart:hover {
+    opacity: 0.9;
+  }
+  
+  @media (max-width: 768px) {
+    .product-content {
+      flex-direction: column;
+      align-items: center;
+    }
+    .product-images {
+      max-width: 100%;
+    }
+    .main-image {
+      height: auto;
+      max-height: 400px;
+    }
+    .product-detail h1 {
+      font-size: 2rem;
+    }
+  }

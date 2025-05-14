@@ -1,0 +1,68 @@
+@import './styles/variables';
+@import './styles/carousel';
+@import './styles/productCard';
+@import './styles/productPage';
+
+body {
+  margin: 0;
+  font-family: $font-family-secondary;
+  background: $background-color;
+  color: $text-color;
+}
+
+.products-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.home {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.filters {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: $background-color;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-group label {
+  font-family: $font-family-secondary;
+  font-size: 1rem;
+}
+
+.filter-group select {
+  padding: 8px;
+  border: 1px solid $border-color;
+  background: $text-color;
+  color: $background-color;
+  font-family: $font-family-secondary;
+  cursor: pointer;
+  transition: $transition;
+  &:hover {
+    border-color: $accent-color;
+  }
+}
+
+@media (max-width: 768px) {
+  .products-list {
+    grid-template-columns: 1fr;
+  }
+  .filters {
+    flex-direction: column;
+  }
+}
