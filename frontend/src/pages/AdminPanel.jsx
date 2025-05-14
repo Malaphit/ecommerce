@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-toastify';
 import api from '../services/api';
 import ProductForm from '../components/ProductForm';
 import CategoryForm from '../components/CategoryForm';
@@ -30,9 +31,11 @@ function AdminPanel() {
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [editOrderId, setEditOrderId] = useState(null);
   const [editUserId, setEditUserId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); 
   const limit = 10;
 
   const fetchData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const [prodRes, catRes, ordRes, userRes] = await Promise.all([
         api.get(
@@ -53,7 +56,9 @@ function AdminPanel() {
       setUsers(userRes.data.users || userRes.data);
       setUserPagination({ total: userRes.data.total, pages: userRes.data.pages });
     } catch (error) {
-      alert('Ошибка загрузки данных: ' + (error.response?.data?.message || 'Ошибка сервера'));
+      toast.error('Ошибка загрузки данных: ' + (error.response?.data?.message || 'Ошибка сервера'));
+    } finally {
+      setIsLoading(false);
     }
   }, [
     productPage,
@@ -77,9 +82,10 @@ function AdminPanel() {
   const handleDelete = async (endpoint, id) => {
     try {
       await api.delete(`${endpoint}/${id}`);
+      toast.success('Элемент успешно удалён');
       fetchData();
     } catch (error) {
-      alert('Ошибка удаления: ' + (error.response?.data?.message || 'Ошибка сервера'));
+      toast.error('Ошибка удаления: ' + (error.response?.data?.message || 'Ошибка сервера'));
     }
   };
 
@@ -107,6 +113,7 @@ function AdminPanel() {
     setEditCategoryId(null);
     setEditOrderId(null);
     setEditUserId(null);
+    toast.success('Изменения сохранены');
     fetchData();
   };
 
@@ -151,7 +158,7 @@ function AdminPanel() {
   return (
     <div>
       <h1>Админ-панель</h1>
-
+      {isLoading && <p style={{ textAlign: 'center', color: '#666' }}>Загрузка...</p>}
       <h2>Продукты</h2>
       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
         <div>
@@ -199,12 +206,12 @@ function AdminPanel() {
             )}
           </ul>
           <div>
-            <button disabled={productPage === 1} onClick={() => setProductPage(productPage - 1)}>
+            <button disabled={productPage === 1 || isLoading} onClick={() => setProductPage(productPage - 1)}>
               Назад
             </button>
             <span>Страница {productPage} из {productPagination.pages}</span>
             <button
-              disabled={productPage === productPagination.pages}
+              disabled={productPage === productPagination.pages || isLoading}
               onClick={() => setProductPage(productPage + 1)}
             >
               Вперед
@@ -225,12 +232,12 @@ function AdminPanel() {
             )}
           </ul>
           <div>
-            <button disabled={categoryPage === 1} onClick={() => setCategoryPage(categoryPage - 1)}>
+            <button disabled={categoryPage === 1 || isLoading} onClick={() => setCategoryPage(categoryPage - 1)}>
               Назад
             </button>
             <span>Страница {categoryPage} из {categoryPagination.pages}</span>
             <button
-              disabled={categoryPage === categoryPagination.pages}
+              disabled={categoryPage === categoryPagination.pages || isLoading}
               onClick={() => setCategoryPage(categoryPage + 1)}
             >
               Вперед
@@ -270,11 +277,11 @@ function AdminPanel() {
             )}
           </ul>
           <div>
-            <button disabled={orderPage === 1} onClick={() => setOrderPage(orderPage - 1)}>
+            <button disabled={orderPage === 1 || isLoading} onClick={() => setOrderPage(orderPage - 1)}>
               Назад
             </button>
             <span>Страница {orderPage} из {orderPagination.pages}</span>
-            <button disabled={orderPage === orderPagination.pages} onClick={() => setOrderPage(orderPage + 1)}>
+            <button disabled={orderPage === orderPagination.pages || isLoading} onClick={() => setOrderPage(orderPage + 1)}>
               Вперед
             </button>
           </div>
@@ -302,11 +309,11 @@ function AdminPanel() {
             )}
           </ul>
           <div>
-            <button disabled={userPage === 1} onClick={() => setUserPage(userPage - 1)}>
+            <button disabled={userPage === 1 || isLoading} onClick={() => setUserPage(userPage - 1)}>
               Назад
             </button>
             <span>Страница {userPage} из {userPagination.pages}</span>
-            <button disabled={userPage === userPagination.pages} onClick={() => setUserPage(userPage + 1)}>
+            <button disabled={userPage === userPagination.pages || isLoading} onClick={() => setUserPage(userPage + 1)}>
               Вперед
             </button>
           </div>

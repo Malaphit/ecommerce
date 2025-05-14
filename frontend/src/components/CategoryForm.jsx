@@ -10,7 +10,7 @@ function CategoryForm({ categoryId, onSave }) {
       api
         .get(`/categories/${categoryId}`)
         .then((response) => {
-          const data = response.data.category || response.data; // безопасный доступ
+          const data = response.data.category || response.data;
           setFormData({
             name: data.name || '',
             description: data.description || '',

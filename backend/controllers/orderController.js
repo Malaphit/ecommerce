@@ -25,6 +25,21 @@ exports.getOrders = async (req, res) => {
   }
 };
 
+exports.getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findByPk(req.params.id, {
+      include: [
+        { model: User, attributes: ['id', 'email'] },
+        { model: Address, attributes: ['id', 'city', 'street', 'house'] },
+      ],
+    });
+    if (!order) return res.status(404).json({ message: 'Заказ не найден' });
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.createOrder = async (req, res) => {
   try {
     const order = await Order.create(req.body);
@@ -37,7 +52,7 @@ exports.createOrder = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) return res.status(404).json({ message: 'Заказ не найден' });
     await order.update(req.body);
     res.json(order);
   } catch (error) {
@@ -48,9 +63,9 @@ exports.updateOrder = async (req, res) => {
 exports.deleteOrder = async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) return res.status(404).json({ message: 'Заказ не найден' });
     await order.destroy();
-    res.json({ message: 'Order deleted' });
+    res.json({ message: 'Заказ удалён' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -4,7 +4,6 @@ import api from '../services/api';
 function UserForm({ userId, onSave }) {
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     first_name: '',
     last_name: '',
     phone: '',
@@ -16,16 +15,16 @@ function UserForm({ userId, onSave }) {
     if (userId) {
       api
         .get(`/users/${userId}`)
-        .then((response) =>
+        .then((response) => {
+          const user = response.data.user || {};
           setFormData({
-            email: response.data.email || '',
-            password: '',
-            first_name: response.data.first_name || '',
-            last_name: response.data.last_name || '',
-            phone: response.data.phone || '',
-            role: response.data.role || 'user',
-          })
-        )
+            email: user.email || '',
+            first_name: user.first_name || '',
+            last_name: user.last_name || '',
+            phone: user.phone || '',
+            role: user.role || 'user',
+          });
+        })
         .catch(() => setErrors({ general: 'Ошибка загрузки данных пользователя' }));
     }
   }, [userId]);
@@ -33,13 +32,10 @@ function UserForm({ userId, onSave }) {
   const validate = () => {
     const newErrors = {};
     if (!formData.email) newErrors.email = 'Email обязателен';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Неверный формат email';
-    if (!userId && !formData.password) newErrors.password = 'Пароль обязателен';
-    else if (formData.password && formData.password.length < 6) newErrors.password = 'Пароль минимум 6 символов';
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Неверный формат email';
     if (formData.first_name && formData.first_name.length > 100) newErrors.first_name = 'Имя слишком длинное';
     if (formData.last_name && formData.last_name.length > 100) newErrors.last_name = 'Фамилия слишком длинная';
     if (formData.phone && !/^[0-9+\-() ]+$/.test(formData.phone)) newErrors.phone = 'Неверный формат телефона';
-    if (!['user', 'admin', 'manager'].includes(formData.role)) newErrors.role = 'Недопустимая роль';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -48,20 +44,16 @@ function UserForm({ userId, onSave }) {
     e.preventDefault();
     if (!validate()) return;
     try {
-      const payload = { ...formData };
-      if (!payload.password) delete payload.password;
       if (userId) {
-        await api.put(`/users/${userId}`, payload);
+        await api.put(`/users/${userId}`, formData);
       } else {
-        await api.post('/users', payload);
+        await api.post('/users', formData);
       }
-      setFormData({ email: '', password: '', first_name: '', last_name: '', phone: '', role: 'user' });
+      setFormData({ email: '', first_name: '', last_name: '', phone: '', role: 'user' });
       setErrors({});
       onSave();
     } catch (error) {
-      const message = error.response?.data?.message || 'Ошибка сохранения пользователя';
-      setErrors({ general: message });
-      if (message.includes('уже существует')) setErrors({ email: 'Email уже существует' });
+      setErrors({ general: error.response?.data?.message || 'Ошибка сохранения пользователя' });
     }
   };
 
@@ -79,16 +71,6 @@ function UserForm({ userId, onSave }) {
             placeholder="Email"
           />
           {errors.email && <p style={{ color: 'red' }}>{errors.email}</p>}
-        </div>
-        <div>
-          <label>Пароль:</label>
-          <input
-            type="password"
-            value={formData.password || ''}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            placeholder={userId ? 'Новый пароль (если нужен)' : 'Пароль'}
-          />
-          {errors.password && <p style={{ color: 'red' }}>{errors.password}</p>}
         </div>
         <div>
           <label>Имя:</label>
@@ -130,7 +112,6 @@ function UserForm({ userId, onSave }) {
             <option value="admin">Админ</option>
             <option value="manager">Менеджер</option>
           </select>
-          {errors.role && <p style={{ color: 'red' }}>{errors.role}</p>}
         </div>
         <button type="submit">Сохранить</button>
       </form>

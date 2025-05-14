@@ -25,21 +25,21 @@ function Cart() {
     localStorage.setItem('cart', JSON.stringify(updatedCart));
   };
 
-  const addToCart = (product, size, quantity) => {
-    const existingItem = cart.find((item) => item.id === product.id && item.size === size);
-    let updatedCart;
-    if (existingItem) {
-      updatedCart = cart.map((item) =>
-        item.id === product.id && item.size === size
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      );
-    } else {
-      updatedCart = [...cart, { ...product, size, quantity }];
-    }
-    setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
-  };
+  // const addToCart = (product, size, quantity) => {
+  //   const existingItem = cart.find((item) => item.id === product.id && item.size === size);
+  //   let updatedCart;
+  //   if (existingItem) {
+  //     updatedCart = cart.map((item) =>
+  //       item.id === product.id && item.size === size
+  //         ? { ...item, quantity: item.quantity + quantity }
+  //         : item
+  //     );
+  //   } else {
+  //     updatedCart = [...cart, { ...product, size, quantity }];
+  //   }
+  //   setCart(updatedCart);
+  //   localStorage.setItem('cart', JSON.stringify(updatedCart));
+  // };
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 

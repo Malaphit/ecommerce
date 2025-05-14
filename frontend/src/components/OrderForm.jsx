@@ -1,17 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import debounce from 'lodash.debounce';
 import api from '../services/api';
+import { toast } from 'react-toastify';
 
 function OrderForm({ orderId, onSave }) {
   const [formData, setFormData] = useState({
     user_id: '',
+    user_email: '',
     total_price: 0,
     status: 'pending',
     address_id: '',
     tracking_number: '',
   });
   const [searchEmail, setSearchEmail] = useState('');
-  const [searchResult, setSearchResult] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
   const [searchError, setSearchError] = useState('');
   const [addresses, setAddresses] = useState([]);
   const [errors, setErrors] = useState({});
@@ -21,62 +23,63 @@ function OrderForm({ orderId, onSave }) {
       try {
         const addressRes = await api.get('/addresses');
         setAddresses(Array.isArray(addressRes.data) ? addressRes.data : []);
+
         if (orderId) {
           const orderRes = await api.get(`/orders/${orderId}`);
           const order = orderRes.data;
           setFormData({
             user_id: order.user_id || '',
+            user_email: order.user?.email || '',
             total_price: order.total_price || 0,
             status: order.status || 'pending',
             address_id: order.address_id || '',
             tracking_number: order.tracking_number || '',
           });
-          if (order.user_id) {
-            const userRes = await api.get(`/users/${order.user_id}`);
-            setSearchEmail(userRes.data.email || '');
-            setSearchResult({ id: order.user_id, email: userRes.data.email });
-          }
+          setSearchEmail(order.user?.email || '');
         }
       } catch (error) {
-        setErrors({ general: error.response?.data?.message || 'Ошибка загрузки данных' });
+        const message = error.response?.data?.message || 'Ошибка загрузки данных заказа';
+        setErrors({ general: message });
+        toast.error(message);
       }
     };
     fetchData();
   }, [orderId]);
 
-  const searchUser = useCallback(
-    debounce(async (email) => {
-      if (!email) {
-        setSearchResult(null);
-        setSearchError('');
-        setFormData((prev) => ({ ...prev, user_id: '' }));
-        return;
-      }
-      try {
-        const res = await api.get(`/users?email=${encodeURIComponent(email)}`);
-        const users = Array.isArray(res.data) ? res.data : [];
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase()) || users[0];
-        if (user) {
-          setSearchResult({ id: user.id, email: user.email });
-          setFormData((prev) => ({ ...prev, user_id: user.id }));
-          setSearchError('');
-        } else {
-          setSearchResult(null);
-          setFormData((prev) => ({ ...prev, user_id: '' }));
-          setSearchError('Пользователь не найден');
-        }
-      } catch (error) {
-        setSearchResult(null);
-        setFormData((prev) => ({ ...prev, user_id: '' }));
-        setSearchError(error.response?.data?.message || 'Ошибка поиска пользователя');
-      }
-    }, 500),
-    []
-  );
+  const searchUser = debounce(async (email) => {
+    if (!email) {
+      setSearchResults([]);
+      setSearchError('');
+      setFormData((prev) => ({ ...prev, user_id: '', user_email: '' }));
+      return;
+    }
+    try {
+      const res = await api.get(`/users?email=${encodeURIComponent(email)}`);
+      const users = Array.isArray(res.data) ? res.data : [];
+      setSearchResults(users);
+      setSearchError(users.length === 0 ? 'Пользователь не найден' : '');
+    } catch (error) {
+      setSearchResults([]);
+      setSearchError(error.response?.data?.message || 'Ошибка поиска пользователя');
+      toast.error(error.response?.data?.message || 'Ошибка поиска пользователя');
+    }
+  }, 500);
 
   useEffect(() => {
     searchUser(searchEmail);
-  }, [searchEmail, searchUser]);
+    return () => searchUser.cancel();
+  }, [searchEmail]);
+
+  const handleSelectUser = (user) => {
+    setFormData((prev) => ({
+      ...prev,
+      user_id: user.id,
+      user_email: user.email,
+    }));
+    setSearchEmail(user.email);
+    setSearchResults([]);
+    setSearchError('');
+  };
 
   const validate = () => {
     const newErrors = {};
@@ -94,19 +97,32 @@ function OrderForm({ orderId, onSave }) {
     e.preventDefault();
     if (!validate()) return;
     try {
+      const payload = { ...formData };
+      delete payload.user_email;
       if (orderId) {
-        await api.put(`/orders/${orderId}`, formData);
+        await api.put(`/orders/${orderId}`, payload);
+        toast.success('Заказ обновлён');
       } else {
-        await api.post('/orders', formData);
+        await api.post('/orders', payload);
+        toast.success('Заказ создан');
       }
-      setFormData({ user_id: '', total_price: 0, status: 'pending', address_id: '', tracking_number: '' });
+      setFormData({
+        user_id: '',
+        user_email: '',
+        total_price: 0,
+        status: 'pending',
+        address_id: '',
+        tracking_number: '',
+      });
       setSearchEmail('');
-      setSearchResult(null);
+      setSearchResults([]);
       setSearchError('');
       setErrors({});
       onSave();
     } catch (error) {
-      setErrors({ general: error.response?.data?.message || 'Ошибка сохранения заказа' });
+      const message = error.response?.data?.message || 'Ошибка сохранения заказа';
+      setErrors({ general: message });
+      toast.error(message);
     }
   };
 
@@ -115,7 +131,7 @@ function OrderForm({ orderId, onSave }) {
       <h2>{orderId ? 'Редактировать заказ' : 'Добавить заказ'}</h2>
       {errors.general && <p style={{ color: 'red' }}>{errors.general}</p>}
       <form onSubmit={handleSubmit}>
-        <div>
+        <div style={{ position: 'relative' }}>
           <label>Пользователь (email):</label>
           <input
             type="email"
@@ -123,8 +139,47 @@ function OrderForm({ orderId, onSave }) {
             onChange={(e) => setSearchEmail(e.target.value)}
             placeholder="Введите email"
           />
-          {searchResult && (
-            <p style={{ color: 'green' }}>Найден: {searchResult.email} (ID: {searchResult.id})</p>
+          {searchResults.length > 0 && (
+            <ul
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                background: 'white',
+                border: '1px solid #ccc',
+                listStyle: 'none',
+                padding: 0,
+                margin: 0,
+                maxHeight: '200px',
+                overflowY: 'auto',
+                zIndex: 1,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}
+            >
+              {searchResults.map((user) => (
+                <li
+                  key={user.id}
+                  onClick={() => handleSelectUser(user)}
+                  style={{
+                    padding: '8px',
+                    cursor: 'pointer',
+                    background: formData.user_id === user.id ? '#f0f0f0' : 'white',
+                  }}
+                  onMouseEnter={(e) => (e.target.style.background = '#e0e0e0')}
+                  onMouseLeave={(e) =>
+                    (e.target.style.background = formData.user_id === user.id ? '#f0f0f0' : 'white')
+                  }
+                >
+                  {user.email}
+                </li>
+              ))}
+            </ul>
+          )}
+          {formData.user_email && (
+            <p style={{ color: 'green' }}>
+              Выбрано: {formData.user_email} (ID: {formData.user_id})
+            </p>
           )}
           {searchError && <p style={{ color: 'red' }}>{searchError}</p>}
           {errors.user_id && <p style={{ color: 'red' }}>{errors.user_id}</p>}
@@ -135,7 +190,7 @@ function OrderForm({ orderId, onSave }) {
             type="number"
             step="0.01"
             value={formData.total_price || 0}
-            onChange={(e) => setFormData((prev) => ({ ...prev, total_price: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, total_price: parseFloat(e.target.value) || 0 }))}
             placeholder="Общая сумма"
           />
           {errors.total_price && <p style={{ color: 'red' }}>{errors.total_price}</p>}
