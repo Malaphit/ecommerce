@@ -22,7 +22,7 @@ function Register() {
       await login(formData.email, formData.password);
       navigate('/profile');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Ошибка регистрации');
     }
   };
 
@@ -31,9 +31,9 @@ function Register() {
   };
 
   return (
-    <div>
-      <h1>Register</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="auth">
+      <h1>Регистрация</h1>
+      {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>Email:</label>
@@ -42,52 +42,52 @@ function Register() {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="Enter your email"
+            placeholder="Введите ваш email"
             required
           />
         </div>
         <div>
-          <label>Password:</label>
+          <label>Пароль:</label>
           <input
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="Enter your password"
+            placeholder="Введите ваш пароль"
             required
           />
         </div>
         <div>
-          <label>First Name:</label>
+          <label>Имя:</label>
           <input
             type="text"
             name="first_name"
             value={formData.first_name}
             onChange={handleChange}
-            placeholder="Enter your first name"
+            placeholder="Введите ваше имя"
           />
         </div>
         <div>
-          <label>Last Name:</label>
+          <label>Фамилия:</label>
           <input
             type="text"
             name="last_name"
             value={formData.last_name}
             onChange={handleChange}
-            placeholder="Enter your last name"
+            placeholder="Введите вашу фамилию"
           />
         </div>
         <div>
-          <label>Phone:</label>
+          <label>Телефон:</label>
           <input
             type="text"
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            placeholder="Enter your phone number"
+            placeholder="Введите ваш номер телефона"
           />
         </div>
-        <button type="submit">Register</button>
+        <button type="submit">Зарегистрироваться</button>
       </form>
     </div>
   );

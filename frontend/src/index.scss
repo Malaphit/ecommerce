@@ -1,7 +1,13 @@
 @import './styles/variables';
+@import './styles/home';
 @import './styles/carousel';
 @import './styles/productCard';
 @import './styles/productPage';
+@import './styles/profile';
+@import './styles/header';
+@import './styles/auth';
+@import './styles/admin';
+@import './styles/forms';
 
 body {
   margin: 0;
@@ -20,24 +26,26 @@ body {
 }
 
 .home {
-  max-width: 1500px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .filters {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   padding: 20px;
   background: $background-color;
   border-radius: 8px;
-  margin-bottom: 20px;
+  margin: 20px 0;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 150px;
 }
 
 .filter-group label {
@@ -45,6 +53,7 @@ body {
   font-size: 1rem;
 }
 
+.filter-group input,
 .filter-group select {
   padding: 8px;
   border: 1px solid $border-color;
@@ -53,9 +62,11 @@ body {
   font-family: $font-family-secondary;
   cursor: pointer;
   transition: $transition;
-  &:hover {
-    border-color: $accent-color;
-  }
+}
+
+.filter-group input:hover,
+.filter-group select:hover {
+  border-color: $accent-color;
 }
 
 @media (max-width: 768px) {

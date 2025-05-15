@@ -1,0 +1,70 @@
+.header {
+    background: $background-color;
+    color: $text-color;
+    padding: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid $border-color;
+  }
+  
+  .header-nav {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .nav-left,
+  .nav-right {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  
+  .nav-left a,
+  .nav-right a {
+    color: $text-color;
+    text-decoration: none;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    transition: $transition;
+  }
+  
+  .nav-left a:hover,
+  .nav-right a:hover {
+    color: $accent-color;
+  }
+  
+  .nav-right button {
+    padding: 8px 16px;
+    background: $accent-color;
+    color: $text-color;
+    border: none;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: $transition;
+  }
+  
+  .nav-right button:hover {
+    opacity: 0.9;
+  }
+  
+  @media (max-width: 768px) {
+    .header-nav {
+      flex-direction: column;
+      gap: 10px;
+    }
+    .nav-left,
+    .nav-right {
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      text-align: center;
+    }
+    .nav-right button {
+      width: 100%;
+    }
+  }

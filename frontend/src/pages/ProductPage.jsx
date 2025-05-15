@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
+import { addToCart } from '../utils/cartUtils';
 
 const ProductPage = () => {
   const { id } = useParams();
@@ -24,21 +25,14 @@ const ProductPage = () => {
     fetchProduct();
   }, [id]);
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!selectedSize) {
       alert('Пожалуйста, выберите размер');
       return;
     }
-    try {
-      await api.post('/cart', {
-        product_id: product.id,
-        size: selectedSize,
-        quantity: 1,
-      });
-      alert('Товар добавлен в корзину');
-    } catch (err) {
-      alert('Ошибка добавления в корзину: ' + (err.response?.data?.message || 'Ошибка сервера'));
-    }
+  
+    addToCart(product, selectedSize, 1);
+    alert('Товар добавлен в корзину');
   };
 
   if (isLoading) {

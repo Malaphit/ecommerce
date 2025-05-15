@@ -31,7 +31,8 @@ function AdminPanel() {
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [editOrderId, setEditOrderId] = useState(null);
   const [editUserId, setEditUserId] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState('products');
   const limit = 10;
 
   const fetchData = useCallback(async () => {
@@ -120,17 +121,17 @@ function AdminPanel() {
   const renderItem = (type, item, editId, FormComponent, formProps) => {
     const isEditing = item.id === editId;
     return (
-      <li key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+      <li key={item.id} className="admin-item">
         {isEditing ? (
           <FormComponent {...formProps} onSave={handleSave} />
         ) : (
           <>
             {type === 'product' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="admin-item-content">
                 <img
                   src={`${process.env.REACT_APP_API_URL}${item.ProductImages?.[0]?.url || '/placeholder.jpg'}`}
                   alt="preview"
-                  style={{ width: '80px', height: '80px', objectFit: 'cover' }}
+                  className="admin-item-image"
                 />
                 <div>
                   <strong>{item.name}</strong> – {item.price}₽{' '}
@@ -145,10 +146,12 @@ function AdminPanel() {
             {type === 'category' && `${item.name}`}
             {type === 'order' && `Заказ #${item.id} - Статус: ${item.status} - Сумма: ${item.total_price} ₽`}
             {type === 'user' && `${item.email} - ${item.role}`}
-            <button onClick={() => handleEdit(type, item.id)}>
-              {isEditing ? 'Отмена' : 'Редактировать'}
-            </button>
-            <button onClick={() => handleDelete(`/${type}s`, item.id)}>Удалить</button>
+            <div className="admin-item-actions">
+              <button onClick={() => handleEdit(type, item.id)}>
+                {isEditing ? 'Отмена' : 'Редактировать'}
+              </button>
+              <button onClick={() => handleDelete(`/${type}s`, item.id)}>Удалить</button>
+            </div>
           </>
         )}
       </li>
@@ -156,169 +159,228 @@ function AdminPanel() {
   };
 
   return (
-    <div>
-      <h1>Админ-панель</h1>
-      {isLoading && <p style={{ textAlign: 'center', color: '#666' }}>Загрузка...</p>}
-      <h2>Продукты</h2>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-        <div>
-          <label>Фильтр по категории:</label>
-          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-            <option value="">Все категории</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+    <div className="admin-panel">
+      <div className="admin-container">
+        <div className="sidebar">
+          <div
+            className={`sidebar-item ${activeSection === 'products' ? 'active' : ''}`}
+            onClick={() => setActiveSection('products')}
+          >
+            Продукты
+          </div>
+          <div
+            className={`sidebar-item ${activeSection === 'categories' ? 'active' : ''}`}
+            onClick={() => setActiveSection('categories')}
+          >
+            Категории
+          </div>
+          <div
+            className={`sidebar-item ${activeSection === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveSection('orders')}
+          >
+            Заказы
+          </div>
+          <div
+            className={`sidebar-item ${activeSection === 'users' ? 'active' : ''}`}
+            onClick={() => setActiveSection('users')}
+          >
+            Пользователи
+          </div>
         </div>
-        <div>
-          <label>Сортировка:</label>
-          <select value={productSort} onChange={(e) => setProductSort(e.target.value)}>
-            <option value="price">По цене</option>
-            <option value="name">По названию</option>
-            <option value="created_at">По дате</option>
-          </select>
-          <select value={productOrder} onChange={(e) => setProductOrder(e.target.value)}>
-            <option value="ASC">По возрастанию</option>
-            <option value="DESC">По убыванию</option>
-          </select>
-        </div>
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-            />
-            Показывать неактивные товары
-          </label>
+        <div className="admin-content">
+          <h1>Админ-панель</h1>
+          {isLoading && <p className="loading">Загрузка...</p>}
+
+          {activeSection === 'products' && (
+            <>
+              <h2>Продукты</h2>
+              <div className="admin-filters">
+                <div>
+                  <label>Фильтр по категории:</label>
+                  <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                    <option value="">Все категории</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label>Сортировка:</label>
+                  <select value={productSort} onChange={(e) => setProductSort(e.target.value)}>
+                    <option value="price">По цене</option>
+                    <option value="name">По названию</option>
+                    <option value="created_at">По дате</option>
+                  </select>
+                  <select value={productOrder} onChange={(e) => setProductOrder(e.target.value)}>
+                    <option value="ASC">По возрастанию</option>
+                    <option value="DESC">По убыванию</option>
+                  </select>
+                </div>
+                <div>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={showInactive}
+                      onChange={(e) => setShowInactive(e.target.checked)}
+                    />
+                    Показывать неактивные товары
+                  </label>
+                </div>
+              </div>
+              <ProductForm onSave={handleSave} />
+              {products.length === 0 ? (
+                <p>Продукты отсутствуют</p>
+              ) : (
+                <>
+                  <ul className="admin-list">
+                    {products.map((product) =>
+                      renderItem('product', product, editProductId, ProductForm, { productId: product.id })
+                    )}
+                  </ul>
+                  <div className="pagination">
+                    <button disabled={productPage === 1 || isLoading} onClick={() => setProductPage(productPage - 1)}>
+                      Назад
+                    </button>
+                    <span>Страница {productPage} из {productPagination.pages}</span>
+                    <button
+                      disabled={productPage === productPagination.pages || isLoading}
+                      onClick={() => setProductPage(productPage + 1)}
+                    >
+                      Вперед
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {activeSection === 'categories' && (
+            <>
+              <h2>Категории</h2>
+              <CategoryForm onSave={handleSave} />
+              {categories.length === 0 ? (
+                <p>Категории отсутствуют</p>
+              ) : (
+                <>
+                  <ul className="admin-list">
+                    {categories.map((category) =>
+                      renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id })
+                    )}
+                  </ul>
+                  <div className="pagination">
+                    <button disabled={categoryPage === 1 || isLoading} onClick={() => setCategoryPage(categoryPage - 1)}>
+                      Назад
+                    </button>
+                    <span>Страница {categoryPage} из {categoryPagination.pages}</span>
+                    <button
+                      disabled={categoryPage === categoryPagination.pages || isLoading}
+                      onClick={() => setCategoryPage(categoryPage + 1)}
+                    >
+                      Вперед
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {activeSection === 'orders' && (
+            <>
+              <h2>Заказы</h2>
+              <div className="admin-filters">
+                <div>
+                  <label>Фильтр по статусу:</label>
+                  <select value={orderStatusFilter} onChange={(e) => setOrderStatusFilter(e.target.value)}>
+                    <option value="">Все</option>
+                    <option value="pending">В обработке</option>
+                    <option value="shipped">Отправлен</option>
+                    <option value="delivered">Доставлен</option>
+                    <option value="cancelled">Отменен</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Сортировка:</label>
+                  <select value={orderSort} onChange={(e) => setOrderSort(e.target.value)}>
+                    <option value="created_at">По дате</option>
+                    <option value="total_price">По сумме</option>
+                  </select>
+                  <select value={orderOrder} onChange={(e) => setOrderOrder(e.target.value)}>
+                    <option value="ASC">По возрастанию</option>
+                    <option value="DESC">По убыванию</option>
+                  </select>
+                </div>
+              </div>
+              <OrderForm onSave={handleSave} />
+              {orders.length === 0 ? (
+                <p>Заказы отсутствуют</p>
+              ) : (
+                <>
+                  <ul className="admin-list">
+                    {orders.map((order) =>
+                      renderItem('order', order, editOrderId, OrderForm, { orderId: order.id })
+                    )}
+                  </ul>
+                  <div className="pagination">
+                    <button disabled={orderPage === 1 || isLoading} onClick={() => setOrderPage(orderPage - 1)}>
+                      Назад
+                    </button>
+                    <span>Страница {orderPage} из {orderPagination.pages}</span>
+                    <button
+                      disabled={orderPage === orderPagination.pages || isLoading}
+                      onClick={() => setOrderPage(orderPage + 1)}
+                    >
+                      Вперед
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {activeSection === 'users' && (
+            <>
+              <h2>Пользователи</h2>
+              <div className="admin-filters">
+                <div>
+                  <label>Поиск по email:</label>
+                  <input
+                    type="text"
+                    value={userSearch || ''}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Введите email"
+                  />
+                </div>
+              </div>
+              <UserForm onSave={handleSave} />
+              {users.length === 0 ? (
+                <p>Пользователи отсутствуют</p>
+              ) : (
+                <>
+                  <ul className="admin-list">
+                    {users.map((user) =>
+                      renderItem('user', user, editUserId, UserForm, { userId: user.id })
+                    )}
+                  </ul>
+                  <div className="pagination">
+                    <button disabled={userPage === 1 || isLoading} onClick={() => setUserPage(userPage - 1)}>
+                      Назад
+                    </button>
+                    <span>Страница {userPage} из {userPagination.pages}</span>
+                    <button
+                      disabled={userPage === userPagination.pages || isLoading}
+                      onClick={() => setUserPage(userPage + 1)}
+                    >
+                      Вперед
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
-      <ProductForm onSave={handleSave} />
-      {products.length === 0 ? (
-        <p>Продукты отсутствуют</p>
-      ) : (
-        <>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {products.map((product) =>
-              renderItem('product', product, editProductId, ProductForm, { productId: product.id })
-            )}
-          </ul>
-          <div>
-            <button disabled={productPage === 1 || isLoading} onClick={() => setProductPage(productPage - 1)}>
-              Назад
-            </button>
-            <span>Страница {productPage} из {productPagination.pages}</span>
-            <button
-              disabled={productPage === productPagination.pages || isLoading}
-              onClick={() => setProductPage(productPage + 1)}
-            >
-              Вперед
-            </button>
-          </div>
-        </>
-      )}
-
-      <h2>Категории</h2>
-      <CategoryForm onSave={handleSave} />
-      {categories.length === 0 ? (
-        <p>Категории отсутствуют</p>
-      ) : (
-        <>
-          <ul>
-            {categories.map((category) =>
-              renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id })
-            )}
-          </ul>
-          <div>
-            <button disabled={categoryPage === 1 || isLoading} onClick={() => setCategoryPage(categoryPage - 1)}>
-              Назад
-            </button>
-            <span>Страница {categoryPage} из {categoryPagination.pages}</span>
-            <button
-              disabled={categoryPage === categoryPagination.pages || isLoading}
-              onClick={() => setCategoryPage(categoryPage + 1)}
-            >
-              Вперед
-            </button>
-          </div>
-        </>
-      )}
-
-      <h2>Заказы</h2>
-      <div>
-        <label>Фильтр по статусу:</label>
-        <select value={orderStatusFilter} onChange={(e) => setOrderStatusFilter(e.target.value)}>
-          <option value="">Все</option>
-          <option value="pending">В обработке</option>
-          <option value="shipped">Отправлен</option>
-          <option value="delivered">Доставлен</option>
-          <option value="cancelled">Отменен</option>
-        </select>
-        <label>Сортировка:</label>
-        <select value={orderSort} onChange={(e) => setOrderSort(e.target.value)}>
-          <option value="created_at">По дате</option>
-          <option value="total_price">По сумме</option>
-        </select>
-        <select value={orderOrder} onChange={(e) => setOrderOrder(e.target.value)}>
-          <option value="ASC">По возрастанию</option>
-          <option value="DESC">По убыванию</option>
-        </select>
-      </div>
-      <OrderForm onSave={handleSave} />
-      {orders.length === 0 ? (
-        <p>Заказы отсутствуют</p>
-      ) : (
-        <>
-          <ul>
-            {orders.map((order) =>
-              renderItem('order', order, editOrderId, OrderForm, { orderId: order.id })
-            )}
-          </ul>
-          <div>
-            <button disabled={orderPage === 1 || isLoading} onClick={() => setOrderPage(orderPage - 1)}>
-              Назад
-            </button>
-            <span>Страница {orderPage} из {orderPagination.pages}</span>
-            <button disabled={orderPage === orderPagination.pages || isLoading} onClick={() => setOrderPage(orderPage + 1)}>
-              Вперед
-            </button>
-          </div>
-        </>
-      )}
-
-      <h2>Пользователи</h2>
-      <div>
-        <label>Поиск по email:</label>
-        <input
-          type="text"
-          value={userSearch || ''}
-          onChange={(e) => setUserSearch(e.target.value)}
-          placeholder="Введите email"
-        />
-      </div>
-      <UserForm onSave={handleSave} />
-      {users.length === 0 ? (
-        <p>Пользователи отсутствуют</p>
-      ) : (
-        <>
-          <ul>
-            {users.map((user) =>
-              renderItem('user', user, editUserId, UserForm, { userId: user.id })
-            )}
-          </ul>
-          <div>
-            <button disabled={userPage === 1 || isLoading} onClick={() => setUserPage(userPage - 1)}>
-              Назад
-            </button>
-            <span>Страница {userPage} из {userPagination.pages}</span>
-            <button disabled={userPage === userPagination.pages || isLoading} onClick={() => setUserPage(userPage + 1)}>
-              Вперед
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }

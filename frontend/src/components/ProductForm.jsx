@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { Range } from 'react-range';
 
 function ProductForm({ productId, onSave }) {
   const [formData, setFormData] = useState({
@@ -7,7 +8,7 @@ function ProductForm({ productId, onSave }) {
     category_id: '',
     price: '',
     description: '',
-    available_sizes: [],
+    size_range: [36, 48], // [minSize, maxSize]
     is_active: true,
     images: [],
   });
@@ -25,12 +26,13 @@ function ProductForm({ productId, onSave }) {
         if (productId) {
           const prodRes = await api.get(`/products/${productId}`);
           const data = prodRes.data.product || prodRes.data;
+          const sizes = data.available_sizes || [36, 48];
           setFormData({
             category_id: data.category_id || '',
             name: data.name || '',
             description: data.description || '',
             price: data.price || '',
-            available_sizes: data.available_sizes || [],
+            size_range: [Math.min(...sizes), Math.max(...sizes)],
             is_active: data.is_active !== undefined ? data.is_active : true,
             images: data.ProductImages || [],
           });
@@ -49,7 +51,9 @@ function ProductForm({ productId, onSave }) {
     if (formData.name && formData.name.length > 100) newErrors.name = 'Название слишком длинное';
     if (!formData.price || formData.price <= 0) newErrors.price = 'Цена должна быть больше 0';
     if (formData.description && formData.description.length > 1000) newErrors.description = 'Описание слишком длинное';
-    if (formData.available_sizes.length === 0) newErrors.available_sizes = 'Выберите хотя бы один размер';
+    if (formData.size_range[0] < 36 || formData.size_range[1] > 48 || formData.size_range[0] > formData.size_range[1]) {
+      newErrors.size_range = 'Неверный диапазон размеров (36–48)';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -58,12 +62,16 @@ function ProductForm({ productId, onSave }) {
     e.preventDefault();
     if (!validate()) return;
     try {
+      const available_sizes = Array.from(
+        { length: formData.size_range[1] - formData.size_range[0] + 1 },
+        (_, i) => formData.size_range[0] + i
+      );
       const payload = {
         name: formData.name,
         category_id: formData.category_id,
         price: parseFloat(formData.price),
         description: formData.description,
-        available_sizes: formData.available_sizes,
+        available_sizes,
         is_active: formData.is_active,
       };
       let product;
@@ -91,7 +99,7 @@ function ProductForm({ productId, onSave }) {
         category_id: '',
         price: '',
         description: '',
-        available_sizes: [],
+        size_range: [36, 48],
         is_active: true,
         images: [],
       });
@@ -101,15 +109,6 @@ function ProductForm({ productId, onSave }) {
     } catch (error) {
       setErrors({ general: error.response?.data?.message || 'Ошибка сохранения продукта' });
     }
-  };
-
-  const handleSizeChange = (size) => {
-    setFormData((prev) => ({
-      ...prev,
-      available_sizes: prev.available_sizes.includes(size)
-        ? prev.available_sizes.filter((s) => s !== size)
-        : [...prev.available_sizes, size],
-    }));
   };
 
   const handleFileChange = (e) => {
@@ -170,115 +169,154 @@ function ProductForm({ productId, onSave }) {
     setDraggingIndex(null);
   };
 
-  const sizes = Array.from({ length: 13 }, (_, i) => 36 + i);
-
   return (
-    <div>
+    <div className="form-container">
       <h2>{productId ? 'Редактировать товар' : 'Добавить товар'}</h2>
-      {errors.general && <p style={{ color: 'red' }}>{errors.general}</p>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Категория:</label>
-          <select
-            value={formData.category_id || ''}
-            onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-          >
-            <option value="">Выберите категорию</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-          {errors.category_id && <p style={{ color: 'red' }}>{errors.category_id}</p>}
-        </div>
-        <div>
-          <label>Название:</label>
-          <input
-            type="text"
-            value={formData.name || ''}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Название продукта"
-          />
-          {errors.name && <p style={{ color: 'red' }}>{errors.name}</p>}
-        </div>
-        <div>
-          <label>Описание:</label>
-          <textarea
-            value={formData.description || ''}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Описание"
-          />
-          {errors.description && <p style={{ color: 'red' }}>{errors.description}</p>}
-        </div>
-        <div>
-          <label>Цена:</label>
-          <input
-            type="number"
-            step="0.01"
-            value={formData.price || ''}
-            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-            placeholder="Цена"
-          />
-          {errors.price && <p style={{ color: 'red' }}>{errors.price}</p>}
-        </div>
-        <div>
-          <label>Размеры:</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {sizes.map((size) => (
-              <label key={size}>
-                <input
-                  type="checkbox"
-                  checked={formData.available_sizes.includes(size)}
-                  onChange={() => handleSizeChange(size)}
-                />
-                {size}
-              </label>
-            ))}
+      {errors.general && <p className="error">{errors.general}</p>}
+      <form>
+        <div className="form-level-1 form-row">
+          <div className="form-group">
+            <label>Категория:</label>
+            <select
+              value={formData.category_id || ''}
+              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+            >
+              <option value="">Выберите категорию</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            {errors.category_id && <p className="error">{errors.category_id}</p>}
           </div>
-          {errors.available_sizes && <p style={{ color: 'red' }}>{errors.available_sizes}</p>}
+          <div className="form-group">
+            <label>Название:</label>
+            <input
+              type="text"
+              value={formData.name || ''}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Название продукта"
+            />
+            {errors.name && <p className="error">{errors.name}</p>}
+          </div>
         </div>
-        <div>
+        <div className="form-level-2 form-row">
+          <div className="form-group">
+            <label>Описание:</label>
+            <textarea
+              value={formData.description || ''}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Описание"
+            />
+            {errors.description && <p className="error">{errors.description}</p>}
+          </div>
+        </div>
+        <div className="form-level-3 form-row">
+          <div className="form-group">
+            <label>Цена:</label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.price || ''}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              placeholder="Цена"
+            />
+            {errors.price && <p className="error">{errors.price}</p>}
+          </div>
+          <div className="form-group form-checkbox">
+            <label>Активен:</label>
+            <input
+              type="checkbox"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+            />
+          </div>
+        </div>
+        <div className="form-level-4 form-row">
+          <div className="form-group">
+            <label>Диапазон размеров (36–48):</label>
+            <div className="size-range-container">
+              <Range
+                step={1}
+                min={36}
+                max={48}
+                values={formData.size_range}
+                onChange={(values) => setFormData({ ...formData, size_range: values })}
+                renderTrack={({ props, children }) => (
+                  <div
+                    {...props}
+                    className="range-track"
+                    style={{
+                      ...props.style,
+                      height: '6px',
+                      width: '100%',
+                      background: `linear-gradient(to right, #E5E5E5 ${
+                        ((formData.size_range[0] - 36) / (48 - 36)) * 100
+                      }%, #F7452C ${
+                        ((formData.size_range[0] - 36) / (48 - 36)) * 100
+                      }%, #F7452C ${
+                        ((formData.size_range[1] - 36) / (48 - 36)) * 100
+                      }%, #E5E5E5 ${
+                        ((formData.size_range[1] - 36) / (48 - 36)) * 100
+                      }%)`,
+                    }}
+                  >
+                    {children}
+                  </div>
+                )}
+                renderThumb={({ props, index }) => (
+                  <div
+                    {...props}
+                    className="range-thumb"
+                    style={{
+                      ...props.style,
+                      height: '16px',
+                      width: '16px',
+                      backgroundColor: '#F7452C',
+                      border: '2px solid #FFFFFF',
+                      borderRadius: '50%',
+                    }}
+                  />
+                )}
+              />
+              <div>
+                <span>{formData.size_range[0]}<span>\</span>{formData.size_range[1]}</span>
+              </div>
+            </div>
+            {errors.size_range && <p className="error">{errors.size_range}</p>}
+          </div>
+        </div>
+      </form>
+      <div className="form-level-5">
+        <div className="form-group images-group">
           <label>Изображения (до 10):</label>
           <input type="file" multiple accept="image/*" onChange={handleFileChange} />
           {files.length > 0 && (
             <>
               <h3>Предпросмотр новых изображений</h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-                  gap: '10px',
-                  marginBottom: '10px',
-                }}
-              >
+              <div className="images-container horizontal">
                 {files.map((file, index) => (
-                  <div key={index} style={{ textAlign: 'center' }}>
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt="Preview"
-                      style={{ width: '100px', height: 'auto', objectFit: 'cover' }}
-                    />
-                    <p style={{ fontSize: '12px', wordBreak: 'break-all' }}>{file.name}</p>
-                    <button type="button" onClick={() => removeFile(index)}>
-                      Удалить
+                  <div key={index} className="image-preview">
+                    <img src={URL.createObjectURL(file)} alt="Preview" />
+                    <button
+                      type="button"
+                      className="image-delete"
+                      onClick={() => removeFile(index)}
+                    >
+                      ✕
                     </button>
+                    <p>{file.name}</p>
                   </div>
                 ))}
               </div>
             </>
           )}
-          {errors.files && <p style={{ color: 'red' }}>{errors.files}</p>}
+          {errors.files && <p className="error">{errors.files}</p>}
           {formData.images.length > 0 && (
             <>
               <h3>Текущие изображения</h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-                  gap: '10px',
-                }}
-              >
+              <div className="images-container horizontal">
                 {formData.images.map((img, index) => (
                   <div
                     key={img.id}
@@ -286,37 +324,25 @@ function ProductForm({ productId, onSave }) {
                     onDragStart={() => handleDragStart(index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDrop={() => handleDrop(index)}
-                    style={{
-                      textAlign: 'center',
-                      cursor: 'move',
-                      background: draggingIndex === index ? '#f0f0f0' : 'transparent',
-                    }}
+                    className={`image-preview ${draggingIndex === index ? 'dragging' : ''}`}
                   >
-                    <img
-                      src={`${process.env.REACT_APP_API_URL}${img.url}`}
-                      alt="Product"
-                      style={{ width: '100px', height: 'auto', objectFit: 'cover' }}
-                    />
-                    <button type="button" onClick={() => handleDeleteImage(img.id)}>
-                      Удалить
+                    <img src={`${process.env.REACT_APP_API_URL}${img.url}`} alt="Product" />
+                    <button
+                      type="button"
+                      className="image-delete"
+                      onClick={() => handleDeleteImage(img.id)}
+                    >
+                      ✕
                     </button>
                   </div>
                 ))}
               </div>
-              {errors.images && <p style={{ color: 'red' }}>{errors.images}</p>}
+              {errors.images && <p className="error">{errors.images}</p>}
             </>
           )}
         </div>
-        <div>
-          <label>Активен:</label>
-          <input
-            type="checkbox"
-            checked={formData.is_active}
-            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-          />
-        </div>
-        <button type="submit">Сохранить</button>
-      </form>
+      </div>
+      <button type="submit" onClick={handleSubmit}>Сохранить</button>
     </div>
   );
 }

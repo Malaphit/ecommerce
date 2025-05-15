@@ -127,11 +127,11 @@ function OrderForm({ orderId, onSave }) {
   };
 
   return (
-    <div>
+    <div className="form-container">
       <h2>{orderId ? 'Редактировать заказ' : 'Добавить заказ'}</h2>
-      {errors.general && <p style={{ color: 'red' }}>{errors.general}</p>}
+      {errors.general && <p className="error">{errors.general}</p>}
       <form onSubmit={handleSubmit}>
-        <div style={{ position: 'relative' }}>
+        <div className="autocomplete-container">
           <label>Пользователь (email):</label>
           <input
             type="email"
@@ -140,36 +140,12 @@ function OrderForm({ orderId, onSave }) {
             placeholder="Введите email"
           />
           {searchResults.length > 0 && (
-            <ul
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                background: 'white',
-                border: '1px solid #ccc',
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-                maxHeight: '200px',
-                overflowY: 'auto',
-                zIndex: 1,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              }}
-            >
+            <ul className="autocomplete-list">
               {searchResults.map((user) => (
                 <li
                   key={user.id}
                   onClick={() => handleSelectUser(user)}
-                  style={{
-                    padding: '8px',
-                    cursor: 'pointer',
-                    background: formData.user_id === user.id ? '#f0f0f0' : 'white',
-                  }}
-                  onMouseEnter={(e) => (e.target.style.background = '#e0e0e0')}
-                  onMouseLeave={(e) =>
-                    (e.target.style.background = formData.user_id === user.id ? '#f0f0f0' : 'white')
-                  }
+                  className={`autocomplete-item ${formData.user_id === user.id ? 'selected' : ''}`}
                 >
                   {user.email}
                 </li>
@@ -177,12 +153,12 @@ function OrderForm({ orderId, onSave }) {
             </ul>
           )}
           {formData.user_email && (
-            <p style={{ color: 'green' }}>
+            <p className="success">
               Выбрано: {formData.user_email} (ID: {formData.user_id})
             </p>
           )}
-          {searchError && <p style={{ color: 'red' }}>{searchError}</p>}
-          {errors.user_id && <p style={{ color: 'red' }}>{errors.user_id}</p>}
+          {searchError && <p className="error">{searchError}</p>}
+          {errors.user_id && <p className="error">{errors.user_id}</p>}
         </div>
         <div>
           <label>Общая сумма:</label>
@@ -193,7 +169,7 @@ function OrderForm({ orderId, onSave }) {
             onChange={(e) => setFormData((prev) => ({ ...prev, total_price: parseFloat(e.target.value) || 0 }))}
             placeholder="Общая сумма"
           />
-          {errors.total_price && <p style={{ color: 'red' }}>{errors.total_price}</p>}
+          {errors.total_price && <p className="error">{errors.total_price}</p>}
         </div>
         <div>
           <label>Статус:</label>
@@ -220,7 +196,7 @@ function OrderForm({ orderId, onSave }) {
               </option>
             ))}
           </select>
-          {errors.address_id && <p style={{ color: 'red' }}>{errors.address_id}</p>}
+          {errors.address_id && <p className="error">{errors.address_id}</p>}
         </div>
         <div>
           <label>Трек-номер:</label>
@@ -230,7 +206,7 @@ function OrderForm({ orderId, onSave }) {
             onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
             placeholder="Трек-номер"
           />
-          {errors.tracking_number && <p style={{ color: 'red' }}>{errors.tracking_number}</p>}
+          {errors.tracking_number && <p className="error">{errors.tracking_number}</p>}
         </div>
         <button type="submit">Сохранить</button>
       </form>

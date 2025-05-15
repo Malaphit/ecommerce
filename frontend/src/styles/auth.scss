@@ -1,0 +1,114 @@
+.auth {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 20px;
+    background: $background-color;
+    color: $text-color;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+  }
+  
+  .auth h1 {
+    font-family: $font-family;
+    font-size: 2rem;
+    text-align: center;
+    margin: 0 0 20px;
+  }
+  
+  .auth form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .auth form div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .auth label {
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    align-self: center;
+  }
+  
+  .auth input {
+    padding: 10px;
+    border: 1px solid $border-color;
+    background: #E5E5E5;
+    color: $background-color;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    transition: $transition;
+    max-width: 300px;
+    border-radius: 12px;
+    align-self: center;
+  }
+  
+  .auth input:hover,
+  .auth input:focus {
+    border-color: $accent-color;
+    outline: none;
+  }
+  
+  .auth button {
+    padding: 10px 20px;
+    background: $accent-color;
+    color: $text-color;
+    border: none;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    cursor: pointer;
+    width: fit-content;
+    align-self: center;
+    transition: $transition;
+  }
+  
+  .auth button:hover {
+    opacity: 0.9;
+  }
+  
+  .auth p {
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    text-align: center;
+    margin: 10px 0;
+  }
+  
+  .auth p a {
+    color: $accent-color;
+    text-decoration: none;
+    transition: $transition;
+  }
+  
+  .auth p a:hover {
+    text-decoration: underline;
+  }
+  
+  .error {
+    color: #ff4d4d;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    text-align: center;
+  }
+  
+  .success {
+    color: #4caf50;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    text-align: center;
+  }
+  
+  @media (max-width: 768px) {
+    .auth {
+      margin: 20px;
+      padding: 15px;
+    }
+    .auth h1 {
+      font-size: 1.5rem;
+    }
+    .auth input {
+      max-width: 100%;
+    }
+  }

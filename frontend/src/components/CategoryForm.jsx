@@ -49,9 +49,9 @@ function CategoryForm({ categoryId, onSave }) {
   };
 
   return (
-    <div>
+    <div className="form-container">
       <h2>{categoryId ? 'Редактировать категорию' : 'Добавить категорию'}</h2>
-      {errors.general && <p style={{ color: 'red' }}>{errors.general}</p>}
+      {errors.general && <p className="error">{errors.general}</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>Название:</label>
@@ -61,7 +61,7 @@ function CategoryForm({ categoryId, onSave }) {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Название категории"
           />
-          {errors.name && <p style={{ color: 'red' }}>{errors.name}</p>}
+          {errors.name && <p className="error">{errors.name}</p>}
         </div>
         <div>
           <label>Описание:</label>
@@ -70,7 +70,7 @@ function CategoryForm({ categoryId, onSave }) {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Описание категории"
           />
-          {errors.description && <p style={{ color: 'red' }}>{errors.description}</p>}
+          {errors.description && <p className="error">{errors.description}</p>}
         </div>
         <div>
           <label>Вес:</label>
@@ -80,7 +80,7 @@ function CategoryForm({ categoryId, onSave }) {
             onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
             placeholder="Вес категории"
           />
-          {errors.weight && <p style={{ color: 'red' }}>{errors.weight}</p>}
+          {errors.weight && <p className="error">{errors.weight}</p>}
         </div>
         <button type="submit">Сохранить</button>
       </form>

@@ -58,9 +58,9 @@ function UserForm({ userId, onSave }) {
   };
 
   return (
-    <div>
+    <div className="form-container">
       <h2>{userId ? 'Редактировать пользователя' : 'Добавить пользователя'}</h2>
-      {errors.general && <p style={{ color: 'red' }}>{errors.general}</p>}
+      {errors.general && <p className="error">{errors.general}</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>Email:</label>
@@ -70,7 +70,7 @@ function UserForm({ userId, onSave }) {
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="Email"
           />
-          {errors.email && <p style={{ color: 'red' }}>{errors.email}</p>}
+          {errors.email && <p className="error">{errors.email}</p>}
         </div>
         <div>
           <label>Имя:</label>
@@ -80,7 +80,7 @@ function UserForm({ userId, onSave }) {
             onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
             placeholder="Имя"
           />
-          {errors.first_name && <p style={{ color: 'red' }}>{errors.first_name}</p>}
+          {errors.first_name && <p className="error">{errors.first_name}</p>}
         </div>
         <div>
           <label>Фамилия:</label>
@@ -90,7 +90,7 @@ function UserForm({ userId, onSave }) {
             onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
             placeholder="Фамилия"
           />
-          {errors.last_name && <p style={{ color: 'red' }}>{errors.last_name}</p>}
+          {errors.last_name && <p className="error">{errors.last_name}</p>}
         </div>
         <div>
           <label>Телефон:</label>
@@ -100,7 +100,7 @@ function UserForm({ userId, onSave }) {
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             placeholder="Телефон"
           />
-          {errors.phone && <p style={{ color: 'red' }}>{errors.phone}</p>}
+          {errors.phone && <p className="error">{errors.phone}</p>}
         </div>
         <div>
           <label>Роль:</label>

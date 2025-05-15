@@ -6,18 +6,26 @@ function Header() {
   const { user, logout } = useContext(AuthContext);
 
   return (
-    <header>
-      <nav>
-        <Link to="/">Home</Link> | <Link to="/faq">FAQ</Link> | <Link to="/profile">Profile</Link> |{' '}
-        <Link to="/cart">Cart</Link> | {user?.role === 'admin' && <Link to="/admin">Admin</Link>} |{' '}
-        {user?.role === 'manager' && <Link to="/manager">Manager</Link>} |{' '}
-        {user ? (
-          <button onClick={logout}>Logout</button>
-        ) : (
-          <>
-            <Link to="/login">Login</Link> | <Link to="/register">Register</Link>
-          </>
-        )}
+    <header className="header">
+      <nav className="header-nav">
+        <div className="nav-left">
+          <Link to="/">Главная</Link>
+          <Link to="/faq">FAQ</Link>
+        </div>
+        <div className="nav-right">
+          <Link to="/profile">Профиль</Link>
+          <Link to="/cart">Корзина</Link>
+          {user?.role === 'admin' && <Link to="/admin">Админ</Link>}
+          {user?.role === 'manager' && <Link to="/manager">Менеджер</Link>}
+          {user ? (
+            <button onClick={logout}>Выйти</button>
+          ) : (
+            <>
+              <Link to="/login">Вход</Link>
+              <Link to="/register">Регистрация</Link>
+            </>
+          )}
+        </div>
       </nav>
     </header>
   );

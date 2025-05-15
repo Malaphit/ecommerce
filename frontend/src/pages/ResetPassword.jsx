@@ -23,10 +23,10 @@ function ResetPassword() {
   };
 
   return (
-    <div>
+    <div className="auth">
       <h1>Сброс пароля</h1>
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {message && <p className="success">{message}</p>}
+      {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>Новый пароль:</label>

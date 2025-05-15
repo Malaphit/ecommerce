@@ -39,52 +39,56 @@ function ReferralForm({ referralId, onSave }) {
       setFormData({ inviter_id: '', invited_id: '', bonus_awarded: false });
       setErrors({});
     } catch (error) {
-      alert('Ошибка сохранения реферала: ' + (error.response?.data?.message || 'Ошибка сервера'));
+      setErrors({ general: error.response?.data?.message || 'Ошибка сохранения реферала' });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Пригласивший:</label>
-        <select
-          value={formData.inviter_id}
-          onChange={(e) => setFormData({ ...formData, inviter_id: e.target.value })}
-        >
-          <option value="">Выберите пригласившего</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.email}
-            </option>
-          ))}
-        </select>
-        {errors.inviter_id && <p style={{ color: 'red' }}>{errors.inviter_id}</p>}
-      </div>
-      <div>
-        <label>Приглашенный:</label>
-        <select
-          value={formData.invited_id}
-          onChange={(e) => setFormData({ ...formData, invited_id: e.target.value })}
-        >
-          <option value="">Выберите приглашенного</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.email}
-            </option>
-          ))}
-        </select>
-        {errors.invited_id && <p style={{ color: 'red' }}>{errors.invited_id}</p>}
-      </div>
-      <div>
-        <label>Бонус начислен:</label>
-        <input
-          type="checkbox"
-          checked={formData.bonus_awarded}
-          onChange={(e) => setFormData({ ...formData, bonus_awarded: e.target.checked })}
-        />
-      </div>
-      <button type="submit">Сохранить</button>
-    </form>
+    <div className="form-container">
+      <h2>{referralId ? 'Редактировать реферала' : 'Добавить реферала'}</h2>
+      {errors.general && <p className="error">{errors.general}</p>}
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Пригласивший:</label>
+          <select
+            value={formData.inviter_id}
+            onChange={(e) => setFormData({ ...formData, inviter_id: e.target.value })}
+          >
+            <option value="">Выберите пригласившего</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.email}
+              </option>
+            ))}
+          </select>
+          {errors.inviter_id && <p className="error">{errors.inviter_id}</p>}
+        </div>
+        <div>
+          <label>Приглашенный:</label>
+          <select
+            value={formData.invited_id}
+            onChange={(e) => setFormData({ ...formData, invited_id: e.target.value })}
+          >
+            <option value="">Выберите приглашенного</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.email}
+              </option>
+            ))}
+          </select>
+          {errors.invited_id && <p className="error">{errors.invited_id}</p>}
+        </div>
+        <div>
+          <label>Бонус начислен:</label>
+          <input
+            type="checkbox"
+            checked={formData.bonus_awarded}
+            onChange={(e) => setFormData({ ...formData, bonus_awarded: e.target.checked })}
+          />
+        </div>
+        <button type="submit">Сохранить</button>
+      </form>
+    </div>
   );
 }
 

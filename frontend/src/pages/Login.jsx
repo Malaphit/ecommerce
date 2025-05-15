@@ -18,9 +18,9 @@ function Login() {
   };
 
   return (
-    <div>
+    <div className="auth">
       <h1>Вход</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>Email:</label>

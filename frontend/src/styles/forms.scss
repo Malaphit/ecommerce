@@ -1,0 +1,340 @@
+.form-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background: $background-color;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  
+  .form-container h2 {
+    font-family: $font-family;
+    font-size: 1.5rem;
+    margin: 0 0 20px;
+    text-align: center;
+  }
+  
+  .form-container form {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: flex-start;
+    min-width: 0;
+  }
+  
+  .form-container div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .form-container label {
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    align-self: center;
+  }
+  
+  .form-container input,
+  .form-container select,
+  .form-container textarea {
+    padding: 10px;
+    border: 1px solid $border-color;
+    background: #E5E5E5;
+    color: $background-color;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    transition: $transition;
+    max-width: 300px;
+    border-radius: 12px;
+    align-self: center;
+  }
+  
+  .form-container textarea {
+    min-height: 100px;
+    resize: vertical;
+    max-width: 100%;
+  }
+  
+  .form-container input:hover,
+  .form-container select:hover,
+  .form-container textarea:hover,
+  .form-container input:focus,
+  .form-container select:focus,
+  .form-container textarea:focus {
+    border-color: $accent-color;
+    outline: none;
+  }
+  
+  .form-container input[type="checkbox"] {
+    max-width: none;
+    width: auto;
+  }
+  
+  .form-container button {
+    padding: 10px 20px;
+    background: $accent-color;
+    color: $text-color;
+    border: none;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    cursor: pointer;
+    width: fit-content;
+    align-self: center;
+    transition: $transition;
+    border-radius: 8px;
+    margin-top: 20px; /* Отступ сверху для кнопки */
+  }
+  
+  .form-container button:hover {
+    opacity: 0.9;
+  }
+  
+  .form-container .error {
+    color: #ff4d4d;
+    font-family: $font-family-secondary;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .form-container .success {
+    color: #4caf50;
+    font-family: $font-family-secondary;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .form-row {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+  }
+  
+  .form-group {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .form-checkbox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .form-checkbox label {
+    align-self: flex-start;
+  }
+  
+  .form-level-1,
+  .form-level-2,
+  .form-level-3,
+  .form-level-4 {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: flex-start;
+    width: auto;
+  }
+  
+  .form-level-5 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-top: 20px; /* Отступ сверху для новой строки */
+  }
+  
+  /* Стили для автодополнения в OrderForm */
+  .autocomplete-container {
+    position: relative;
+  }
+  
+  .autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    max-width: 100%;
+    background: $text-color;
+    border: 1px solid $border-color;
+    list-style: none;
+    padding: 0;
+    margin: 5px 0 0;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+  }
+  
+  .autocomplete-item {
+    padding: 8px;
+    cursor: pointer;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    transition: background 0.2s;
+  }
+  
+  .autocomplete-item:hover,
+  .autocomplete-item.selected {
+    background: #f0f0f0;
+  }
+  
+  /* Стили для размеров и изображений в ProductForm */
+  .sizes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 300px;
+    align-self: center;
+  }
+  
+  .sizes-container label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+  }
+  
+  .size-range-container {
+    max-width: 400px;
+    min-width: 400px;
+    align-self: center;
+    padding: 20px 0;
+  }
+  
+  .range-track {
+    height: 6px;
+    border-radius: 3px;
+  }
+  
+  .range-thumb {
+    cursor: pointer;
+  }
+  
+  .size-range-values {
+    display: flex;
+    justify-content: space-between;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    margin-top: 10px;
+  }
+  
+  .images-group {
+    flex: 1;
+    min-width: 100%;
+  }
+  
+  .images-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 10px 0;
+  }
+  
+  .images-container.horizontal {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 15px;
+    padding-bottom: 10px;
+    width: 100%;
+  }
+  
+  .image-preview {
+    text-align: center;
+    position: relative;
+    flex: 0 0 120px;
+  }
+  
+  .image-preview img {
+    width: 100px;
+    height: auto;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+  }
+  
+  .image-preview p {
+    font-family: $font-family-secondary;
+    font-size: 0.8rem;
+    word-break: break-all;
+    margin: 10px 0;
+  }
+  
+  .image-preview.dragging {
+    background: #f0f0f0;
+  }
+  
+  .image-delete {
+    position: absolute;
+    top: -20px;
+    right: 5px;
+    background: $accent-color;
+    color: $text-color;
+    border: none;
+    width: 10px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: $transition;
+    z-index: 1;
+  }
+  
+  .image-delete:hover {
+    background: darken($accent-color, 10%);
+  }
+  
+  @media (max-width: 768px) {
+    .form-container {
+      margin: 10px;
+      padding: 15px;
+    }
+    .form-container h2 {
+      font-size: 1.2rem;
+    }
+    .form-container form {
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    .form-container input,
+    .form-container select,
+    .form-container textarea {
+      max-width: 100%;
+    }
+    .form-row {
+      flex-direction: column;
+    }
+    .form-group {
+      min-width: 100%;
+    }
+    .form-level-1,
+    .form-level-2,
+    .form-level-3,
+    .form-level-4 {
+      flex-direction: column;
+    }
+    .form-level-5 {
+      flex-direction: column;
+    }
+    .size-range-container {
+      max-width: 100%;
+      min-width: 100%;
+    }
+    .autocomplete-list {
+      width: 100%;
+      left: 0;
+      transform: none;
+    }
+    .images-container.horizontal {
+      flex-wrap: nowrap;
+    }
+  }

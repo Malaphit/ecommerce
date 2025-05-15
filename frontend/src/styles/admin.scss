@@ -1,0 +1,235 @@
+.admin-panel {
+    padding: 20px;
+    background: $background-color;
+    color: $text-color;
+  }
+  
+  .admin-container {
+    display: flex;
+    gap: 30px;
+  }
+  
+  .sidebar {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .sidebar-item {
+    padding: 15px;
+    background: $slide-bg;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: $transition;
+  }
+  
+  .sidebar-item:hover {
+    background: $accent-color;
+    color: $text-color;
+  }
+  
+  .sidebar-item.active {
+    background: $accent-color;
+    color: $text-color;
+    border-color: $accent-color;
+  }
+  
+  .admin-content {
+    flex: 1;
+  }
+  
+  .admin-content h1,
+  .admin-content h2 {
+    font-family: $font-family;
+    margin: 0 0 20px;
+  }
+  
+  .admin-content h1 {
+    font-size: 2.5rem;
+  }
+  
+  .admin-content h2 {
+    font-size: 2rem;
+  }
+  
+  .admin-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .admin-filters div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .admin-filters label {
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+  }
+  
+  .admin-filters input,
+  .admin-filters select {
+    padding: 10px;
+    border: 1px solid $border-color;
+    background: #E5E5E5;
+    color: $background-color;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    transition: $transition;
+    max-width: 200px;
+    border-radius: 12px;
+  }
+  
+  .admin-filters input:hover,
+  .admin-filters select:hover,
+  .admin-filters input:focus,
+  .admin-filters select:focus {
+    border-color: $accent-color;
+    outline: none;
+  }
+  
+  .admin-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .admin-item {
+    padding: 15px;
+    background: $slide-bg;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: $transition;
+  }
+  
+  .admin-item:hover {
+    transform: translateY(-3px);
+  }
+  
+  .admin-item-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .admin-item-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+  
+  .admin-item-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .admin-item-actions button {
+    padding: 8px 16px;
+    background: $accent-color;
+    color: $text-color;
+    border: none;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: $transition;
+  }
+  
+  .admin-item-actions button:hover {
+    opacity: 0.9;
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .pagination span {
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+  }
+  
+  .pagination button {
+    padding: 8px 16px;
+    background: $accent-color;
+    color: $text-color;
+    border: none;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: $transition;
+  }
+  
+  .pagination button:hover {
+    opacity: 0.9;
+  }
+  
+  .pagination button:disabled {
+    background: darken($accent-color, 20%);
+    cursor: not-allowed;
+  }
+  
+  .loading {
+    text-align: center;
+    color: #666;
+    font-family: $font-family-secondary;
+    font-size: 1rem;
+    margin: 20px 0;
+  }
+  
+  @media (max-width: 768px) {
+    .admin-container {
+      flex-direction: column;
+    }
+    .sidebar {
+      width: 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .sidebar-item {
+      flex: 1;
+      text-align: center;
+      min-width: 120px;
+    }
+    .admin-content h1 {
+      font-size: 2rem;
+    }
+    .admin-content h2 {
+      font-size: 1.5rem;
+    }
+    .admin-filters {
+      flex-direction: column;
+    }
+    .admin-filters input,
+    .admin-filters select {
+      max-width: 100%;
+    }
+    .admin-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .admin-item-actions {
+      width: 100%;
+      justify-content: center;
+    }
+    .admin-item-actions button {
+      width: 100%;
+    }
+  }

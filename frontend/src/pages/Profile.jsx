@@ -16,20 +16,16 @@ function Profile() {
     apartment: '',
     postal_code: '',
   });
-//   const [passwordForm, setPasswordForm] = useState({
-//     newPassword: '',
-//     confirmPassword: '',
-//   });
   const [referralCode, setReferralCode] = useState('');
   const [editAddressId, setEditAddressId] = useState(null);
   const [error, setError] = useState('');
-//   const [passwordError, setPasswordError] = useState('');
   const [resetMessage, setResetMessage] = useState('');
   const [resetError, setResetError] = useState('');
   const [orderPage, setOrderPage] = useState(1);
   const [referralPage, setReferralPage] = useState(1);
   const [orderPagination, setOrderPagination] = useState({ total: 0, pages: 1 });
   const [referralPagination, setReferralPagination] = useState({ total: 0, pages: 1 });
+  const [activeSection, setActiveSection] = useState('personal');
   const limit = 10;
 
   useEffect(() => {
@@ -46,7 +42,7 @@ function Profile() {
           total: orderRes.data.total,
           pages: orderRes.data.pages,
         });
-        setAddresses(addressRes.data); 
+        setAddresses(addressRes.data);
         setReferrals(userRes.data.referrals.rows);
         setReferralPagination({
           total: userRes.data.referrals.total,
@@ -72,14 +68,14 @@ function Profile() {
   const handlePasswordResetLink = async () => {
     try {
       const response = await api.post('/auth/forgot-password', { email: profile.email });
-      setResetMessage(response.data.message || 'Ссылка для сброса отправлена');
+      setResetMessage(response.data.message || 'Ссылка для сброса отправлена(三秒后跳转至登陆页面)');
       setResetError('');
     } catch (err) {
       setResetError(err.response?.data?.message || 'Ошибка при отправке ссылки');
       setResetMessage('');
     }
   };
-  
+
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -139,231 +135,276 @@ function Profile() {
     });
   };
 
-  if (!profile) return <p>Загрузка...</p>;
+  if (!profile) return <p className="profile">Загрузка...</p>;
 
   return (
-    <div>
-      <h1>Профиль</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <h2>Личная информация</h2>
-      <form onSubmit={handleProfileUpdate}>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={profile.email}
-            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-          />
-        </div>
-        <div>
-          <label>Имя:</label>
-          <input
-            type="text"
-            value={profile.first_name || ''}
-            onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
-          />
-        </div>
-        <div>
-          <label>Фамилия:</label>
-          <input
-            type="text"
-            value={profile.last_name || ''}
-            onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
-          />
-        </div>
-        <div>
-          <label>Телефон:</label>
-          <input
-            type="text"
-            value={profile.phone || ''}
-            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-          />
-        </div>
-        <div>
-          <label>Реферальный код:</label>
-          <input type="text" value={profile.referral_code} disabled />
-        </div>
-        <div>
-          <label>Бонусные баллы:</label>
-          <input type="text" value={profile.bonus_points} disabled />
-        </div>
-        <button type="submit">Обновить профиль</button>
-      </form>
-
-      <h2>Применить реферальный код</h2>
-      <form onSubmit={handleReferralCodeSubmit}>
-        <div>
-          <label>Реферальный код:</label>
-          <input
-            type="text"
-            value={referralCode}
-            onChange={(e) => setReferralCode(e.target.value)}
-            placeholder="Введите реферальный код"
-          />
-        </div>
-        <button type="submit">Применить</button>
-      </form>
-
-      <h2>Сброс пароля</h2>
-        {resetMessage && <p style={{ color: 'green' }}>{resetMessage}</p>}
-        {resetError && <p style={{ color: 'red' }}>{resetError}</p>}
-        <button onClick={handlePasswordResetLink}>
-        Сброс пароля
-        </button>
-
-      <h2>Адреса</h2>
-      <form onSubmit={handleAddressSubmit}>
-        <div>
-          <label>Город:</label>
-          <input
-            type="text"
-            name="city"
-            value={addressForm.city}
-            onChange={handleAddressChange}
-            placeholder="Введите город"
-            required
-          />
-        </div>
-        <div>
-          <label>Улица:</label>
-          <input
-            type="text"
-            name="street"
-            value={addressForm.street}
-            onChange={handleAddressChange}
-            placeholder="Введите улицу"
-            required
-          />
-        </div>
-        <div>
-          <label>Дом:</label>
-          <input
-            type="text"
-            name="house"
-            value={addressForm.house}
-            onChange={handleAddressChange}
-            placeholder="Введите номер дома"
-            required
-          />
-        </div>
-        <div>
-          <label>Корпус:</label>
-          <input
-            type="text"
-            name="building"
-            value={addressForm.building}
-            onChange={handleAddressChange}
-            placeholder="Введите корпус (если есть)"
-          />
-        </div>
-        <div>
-          <label>Квартира:</label>
-          <input
-            type="text"
-            name="apartment"
-            value={addressForm.apartment}
-            onChange={handleAddressChange}
-            placeholder="Введите номер квартиры (если есть)"
-          />
-        </div>
-        <div>
-          <label>Почтовый индекс:</label>
-          <input
-            type="text"
-            name="postal_code"
-            value={addressForm.postal_code}
-            onChange={handleAddressChange}
-            placeholder="Введите почтовый индекс"
-          />
-        </div>
-        <button type="button" onClick={fillExampleAddress}>
-          Заполнить пример
-        </button>
-        <button type="submit">{editAddressId ? 'Обновить адрес' : 'Добавить адрес'}</button>
-      </form>
-      <h3>Сохраненные адреса</h3>
-      {addresses.length === 0 ? (
-        <p>Адреса отсутствуют</p>
-      ) : (
-        <ul>
-          {addresses.map((addr) => (
-            <li key={addr.id}>
-              {addr.city}, {addr.street}, {addr.house}
-              {addr.building && `, корп. ${addr.building}`}
-              {addr.apartment && `, кв. ${addr.apartment}`}
-              {addr.postal_code && `, ${addr.postal_code}`}
-              <button onClick={() => handleAddressEdit(addr)}>Редактировать</button>
-              <button onClick={() => handleAddressDelete(addr.id)}>Удалить</button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <h2>История заказов</h2>
-      {orders.length === 0 ? (
-        <p>Заказы отсутствуют</p>
-      ) : (
-        <>
-          <ul>
-            {orders.map((order) => (
-              <li key={order.id}>
-                Заказ #{order.id} - Статус: {order.status} - Сумма: ${order.total_price}
-              </li>
-            ))}
-          </ul>
-          <div>
-            <button
-              disabled={orderPage === 1}
-              onClick={() => setOrderPage(orderPage - 1)}
-            >
-              Назад
-            </button>
-            <span>
-              Страница {orderPage} из {orderPagination.pages}
-            </span>
-            <button
-              disabled={orderPage === orderPagination.pages}
-              onClick={() => setOrderPage(orderPage + 1)}
-            >
-              Вперед
-            </button>
+    <div className="profile">
+      <div className="profile-container">
+        <div className="sidebar">
+          <div
+            className={`sidebar-item ${activeSection === 'personal' ? 'active' : ''}`}
+            onClick={() => setActiveSection('personal')}
+          >
+            Личная информация
           </div>
-        </>
-      )}
-
-      <h2>Реферальная история</h2>
-      {referrals.length === 0 ? (
-        <p>Рефералы отсутствуют</p>
-      ) : (
-        <>
-          <ul>
-            {referrals.map((ref) => (
-              <li key={ref.id}>
-                Приглашенный пользователь: {ref.Invited?.email || 'Неизвестно'} - Бонус начислен:{' '}
-                {ref.bonus_awarded ? 'Да' : 'Нет'}
-              </li>
-            ))}
-          </ul>
-          <div>
-            <button
-              disabled={referralPage === 1}
-              onClick={() => setReferralPage(referralPage - 1)}
-            >
-              Назад
-            </button>
-            <span>
-              Страница {referralPage} из {referralPagination.pages}
-            </span>
-            <button
-              disabled={referralPage === referralPagination.pages}
-              onClick={() => setReferralPage(referralPage + 1)}
-            >
-              Вперед
-            </button>
+          <div
+            className={`sidebar-item ${activeSection === 'referrals' ? 'active' : ''}`}
+            onClick={() => setActiveSection('referrals')}
+          >
+            Реферальный код
           </div>
-        </>
-      )}
+          <div
+            className={`sidebar-item ${activeSection === 'addresses' ? 'active' : ''}`}
+            onClick={() => setActiveSection('addresses')}
+          >
+            Адреса
+          </div>
+          <div
+            className={`sidebar-item ${activeSection === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveSection('orders')}
+          >
+            История заказов
+          </div>
+        </div>
+        <div className="profile-content">
+          {error && <p className="error">{error}</p>}
+
+          {activeSection === 'personal' && (
+            <>
+              <h2>Личная информация</h2>
+              <form onSubmit={handleProfileUpdate}>
+                <div>
+                  <label>Email:</label>
+                  <input
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label>Имя:</label>
+                  <input
+                    type="text"
+                    value={profile.first_name || ''}
+                    onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label>Фамилия:</label>
+                  <input
+                    type="text"
+                    value={profile.last_name || ''}
+                    onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label>Телефон:</label>
+                  <input
+                    type="text"
+                    value={profile.phone || ''}
+                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label>Реферальный код:</label>
+                  <input type="text" value={profile.referral_code} disabled />
+                </div>
+                <div>
+                  <label>Бонусные баллы:</label>
+                  <input type="text" value={profile.bonus_points} disabled />
+                </div>
+                <button type="submit">Обновить профиль</button>
+              </form>
+
+              <h2>Сброс пароля</h2>
+              {resetMessage && <p className="success">{resetMessage}</p>}
+              {resetError && <p className="error">{resetError}</p>}
+              <button onClick={handlePasswordResetLink}>Сброс пароля</button>
+            </>
+          )}
+
+          {activeSection === 'referrals' && (
+            <>
+              <h2>Применить реферальный код</h2>
+              <form onSubmit={handleReferralCodeSubmit}>
+                <div>
+                  <label>Реферальный код:</label>
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="Введите реферальный код"
+                  />
+                </div>
+                <button type="submit">Применить</button>
+              </form>
+
+              <h2>Реферальная история</h2>
+              {referrals.length === 0 ? (
+                <p>Рефералы отсутствуют</p>
+              ) : (
+                <>
+                  <ul>
+                    {referrals.map((ref) => (
+                      <li key={ref.id}>
+                        <span>
+                          Приглашенный пользователь: {ref.Invited?.email || 'Неизвестно'} - Бонус начислен:{' '}
+                          {ref.bonus_awarded ? 'Да' : 'Нет'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pagination">
+                    <button
+                      disabled={referralPage === 1}
+                      onClick={() => setReferralPage(referralPage - 1)}
+                    >
+                      Назад
+                    </button>
+                    <span>Страница {referralPage} из {referralPagination.pages}</span>
+                    <button
+                      disabled={referralPage === referralPagination.pages}
+                      onClick={() => setReferralPage(referralPage + 1)}
+                    >
+                      Вперед
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {activeSection === 'addresses' && (
+            <>
+              <h2>Адреса</h2>
+              <form onSubmit={handleAddressSubmit}>
+                <div>
+                  <label>Город:</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={addressForm.city}
+                    onChange={handleAddressChange}
+                    placeholder="Введите город"
+                    required
+                  />
+                </div>
+                <div>
+                  <label>Улица:</label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={addressForm.street}
+                    onChange={handleAddressChange}
+                    placeholder="Введите улицу"
+                    required
+                  />
+                </div>
+                <div>
+                  <label>Дом:</label>
+                  <input
+                    type="text"
+                    name="house"
+                    value={addressForm.house}
+                    onChange={handleAddressChange}
+                    placeholder="Введите номер дома"
+                    required
+                  />
+                </div>
+                <div>
+                  <label>Корпус:</label>
+                  <input
+                    type="text"
+                    name="building"
+                    value={addressForm.building}
+                    onChange={handleAddressChange}
+                    placeholder="Введите корпус (если есть)"
+                  />
+                </div>
+                <div>
+                  <label>Квартира:</label>
+                  <input
+                    type="text"
+                    name="apartment"
+                    value={addressForm.apartment}
+                    onChange={handleAddressChange}
+                    placeholder="Введите номер квартиры (если есть)"
+                  />
+                </div>
+                <div>
+                  <label>Почтовый индекс:</label>
+                  <input
+                    type="text"
+                    name="postal_code"
+                    value={addressForm.postal_code}
+                    onChange={handleAddressChange}
+                    placeholder="Введите почтовый индекс"
+                  />
+                </div>
+                <button type="button" onClick={fillExampleAddress}>Заполнить пример</button>
+                <button type="submit">{editAddressId ? 'Обновить адрес' : 'Добавить адрес'}</button>
+              </form>
+              <h3>Сохраненные адреса</h3>
+              {addresses.length === 0 ? (
+                <p>Адреса отсутствуют</p>
+              ) : (
+                <ul>
+                  {addresses.map((addr) => (
+                    <li key={addr.id}>
+                      <span>
+                        {addr.city}, {addr.street}, {addr.house}
+                        {addr.building && `, корп. ${addr.building}`}
+                        {addr.apartment && `, кв. ${addr.apartment}`}
+                        {addr.postal_code && `, ${addr.postal_code}`}
+                      </span>
+                      <div>
+                        <button onClick={() => handleAddressEdit(addr)}>Редактировать</button>
+                        <button onClick={() => handleAddressDelete(addr.id)}>Удалить</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          {activeSection === 'orders' && (
+            <>
+              <h2>История заказов</h2>
+              {orders.length === 0 ? (
+                <p>Заказы отсутствуют</p>
+              ) : (
+                <>
+                  <ul>
+                    {orders.map((order) => (
+                      <li key={order.id}>
+                        <span>
+                          Заказ #{order.id} - Статус: {order.status} - Сумма: {order.total_price} ₽
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pagination">
+                    <button
+                      disabled={orderPage === 1}
+                      onClick={() => setOrderPage(orderPage - 1)}
+                    >
+                      Назад
+                    </button>
+                    <span>Страница {orderPage} из {orderPagination.pages}</span>
+                    <button
+                      disabled={orderPage === orderPagination.pages}
+                      onClick={() => setOrderPage(orderPage + 1)}
+                    >
+                      Вперед
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
