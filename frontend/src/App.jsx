@@ -10,6 +10,7 @@ import Cart from './pages/Cart';
 import AdminPanel from './pages/AdminPanel';
 import ManagerPanel from './pages/ManagerPanel';
 import Login from './pages/Login';
+import OrderHistory from './components/OrderHistory';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -28,6 +29,7 @@ function App() {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+        <Route path="/profile/orders" element={<OrderHistory />} />
         <Route
           path="/admin"
           element={

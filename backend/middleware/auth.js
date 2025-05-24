@@ -2,19 +2,25 @@ const jwt = require('jsonwebtoken');
 
 const authenticate = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
+  if (!token) {
+    console.error('Authenticate: No token provided');
+    return res.status(401).json({ message: 'No token provided' });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Authenticate: Декодированный токен:', decoded);
     req.user = decoded;
     next();
   } catch (error) {
+    console.error('Authenticate error:', error.message, { token, errorStack: error.stack });
     res.status(401).json({ message: 'Invalid token' });
   }
 };
 
 const authorize = (roles) => (req, res, next) => {
   if (!roles.includes(req.user.role)) {
+    console.error('Authorize: Access denied', { userRole: req.user.role, requiredRoles: roles });
     return res.status(403).json({ message: 'Access denied' });
   }
   next();

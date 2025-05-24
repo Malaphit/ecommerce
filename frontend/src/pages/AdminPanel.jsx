@@ -144,7 +144,7 @@ function AdminPanel() {
               </div>
             )}
             {type === 'category' && `${item.name}`}
-            {type === 'order' && `Заказ #${item.id} - Статус: ${item.status} - Сумма: ${item.total_price} ₽`}
+            {type === 'order' && `Заказ #${item.id} - Пользователь: ${item.User?.email || 'Не указан'} - Статус: ${item.status} - Сумма: ${item.total_price} ₽`}
             {type === 'user' && `${item.email} - ${item.role}`}
             <div className="admin-item-actions">
               <button onClick={() => handleEdit(type, item.id)}>

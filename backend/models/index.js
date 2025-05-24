@@ -30,12 +30,12 @@ const User = sequelize.define('User', {
     validate: { min: 0 },
   },
   reset_token: { type: DataTypes.STRING(255) },
+  cartOrderId: { type: DataTypes.INTEGER, allowNull: true, comment: 'Идентификатор заказа корзины' },
 }, {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
-  indexes: [{ fields: ['email'] }, { fields: ['referral_code'] }],
-  defaultValue: Sequelize.NOW,
+  indexes: [{ fields: ['email'] }, { fields: ['referral_code'] }, { fields: ['cartOrderId'] }],
 });
 
 const Address = sequelize.define('Address', {
@@ -85,14 +85,13 @@ const Product = sequelize.define('Product', {
 const ProductImage = sequelize.define('ProductImage', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   url: { type: DataTypes.STRING, allowNull: false },
-  product_id: {type: DataTypes.INTEGER,allowNull: false,references: { model: 'Products', key: 'id', } },
+  product_id: { type: DataTypes.INTEGER, allowNull: false, references: { model: 'Products', key: 'id' } },
   position: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 }, {
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: false,
 });
-
 
 const Order = sequelize.define('Order', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -104,7 +103,7 @@ const Order = sequelize.define('Order', {
     defaultValue: 'pending',
   },
   tracking_number: { type: DataTypes.STRING(50) },
-  address_id: { type: DataTypes.INTEGER, allowNull: false },
+  address_id: { type: DataTypes.INTEGER },
 }, {
   timestamps: true,
   createdAt: 'created_at',
@@ -203,7 +202,6 @@ const ChatMessage = sequelize.define('ChatMessage', {
   indexes: [{ fields: ['user_id'] }, { fields: ['admin_id'] }, { fields: ['created_at'] }],
 });
 
-// Associations
 User.hasMany(Address, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 Address.belongsTo(User, { foreignKey: 'user_id' });
 

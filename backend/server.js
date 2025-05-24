@@ -13,6 +13,7 @@ const referralRoutes = require('./routes/referralRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const checkoutRoutes = require('./routes/checkoutRoutes');
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use('/api/referrals', referralRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/checkoutRoutes', checkoutRoutes);
 
 sequelize.authenticate()
   .then(() => {

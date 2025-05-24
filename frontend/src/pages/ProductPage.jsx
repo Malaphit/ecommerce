@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import api from '../services/api';
-import { addToCart } from '../utils/cartUtils';
+import { AuthContext } from '../context/AuthContext';
 
 const ProductPage = () => {
   const { id } = useParams();
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -25,14 +29,33 @@ const ProductPage = () => {
     fetchProduct();
   }, [id]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    if (!user) {
+      toast.error('Пожалуйста, войдите в аккаунт');
+      navigate('/login');
+      return;
+    }
     if (!selectedSize) {
-      alert('Пожалуйста, выберите размер');
+      toast.error('Пожалуйста, выберите размер');
+      return;
+    }
+    if (quantity < 1) {
+      toast.error('Количество должно быть не менее 1');
       return;
     }
   
-    addToCart(product, selectedSize, 1);
-    alert('Товар добавлен в корзину');
+    try {
+      await api.post('/cart', {
+        product_id: product.id,
+        size: selectedSize,
+        quantity,
+      });
+      toast.success('Товар добавлен в корзину');
+      navigate('/cart');
+    } catch (err) {
+      console.error('Ошибка добавления в корзину:', err.response?.data); 
+      toast.error(err.response?.data?.message || 'Ошибка добавления в корзину');
+    }
   };
 
   if (isLoading) {
@@ -70,7 +93,7 @@ const ProductPage = () => {
         <div className="product-info">
           <p>Цена: <span className="product-price">{product.price} ₽</span></p>
           <p>Описание: {product.description || 'Нет описания'}</p>
-          <p>Категория: {product.category_name || 'Не указана'}</p>
+          <p>Категория: {product.Category?.name || 'Не указана'}</p>
           <div className="size-selector">
             <label>Размер:</label>
             <select
@@ -84,6 +107,15 @@ const ProductPage = () => {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="quantity-selector">
+            <label>Количество:</label>
+            <input
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            />
           </div>
           <button onClick={handleAddToCart} className="add-to-cart">
             Добавить в корзину

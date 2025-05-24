@@ -1,66 +1,160 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { toast } from 'react-toastify';
+import api from '../services/api';
 import CartItem from '../components/CartItem';
-import Checkout from '../components/Checkout';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 function Cart() {
-  const [cart, setCart] = useState([]);
+  const { user } = useContext(AuthContext);
+  const [cartItems, setCartItems] = useState([]);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState('');
+  const [deliveryCost, setDeliveryCost] = useState(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
-    setCart(savedCart);
-  }, []);
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const fetchCart = async () => {
+      try {
+        const res = await api.get('/cart');
+        setCartItems(res.data);
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Ошибка загрузки корзины');
+      }
+    };
+    const fetchAddresses = async () => {
+      try {
+        const res = await api.get('/addresses');
+        setAddresses(Array.isArray(res.data) ? res.data : []);
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Ошибка загрузки адресов');
+      }
+    };
+    fetchCart();
+    fetchAddresses();
+  }, [user, navigate]);
 
-  const updateCart = (id, quantity) => {
-    if (quantity < 1) return removeFromCart(id);
-    const updatedCart = cart.map((item) =>
-      item.id === id ? { ...item, quantity } : item
-    );
-    setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+  const calculateDelivery = async () => {
+    if (!selectedAddress) {
+      toast.error('Выберите адрес доставки');
+      return;
+    }
+    try {
+      const res = await api.post('/checkout/calculate-delivery', { address_id: selectedAddress, tariff_code: '136' });
+      setDeliveryCost(res.data);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Ошибка расчета доставки');
+    }
   };
 
-  const removeFromCart = (id) => {
-    const updatedCart = cart.filter((item) => item.id !== id);
-    setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+  const updateCart = async (id, quantity) => {
+    try {
+      const res = await api.put(`/cart/${id}`, { quantity });
+      setCartItems(cartItems.map((item) => (item.id === id ? res.data : item)));
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Ошибка обновления корзины');
+    }
   };
 
-  // const addToCart = (product, size, quantity) => {
-  //   const existingItem = cart.find((item) => item.id === product.id && item.size === size);
-  //   let updatedCart;
-  //   if (existingItem) {
-  //     updatedCart = cart.map((item) =>
-  //       item.id === product.id && item.size === size
-  //         ? { ...item, quantity: item.quantity + quantity }
-  //         : item
-  //     );
-  //   } else {
-  //     updatedCart = [...cart, { ...product, size, quantity }];
-  //   }
-  //   setCart(updatedCart);
-  //   localStorage.setItem('cart', JSON.stringify(updatedCart));
-  // };
+  const removeFromCart = async (id) => {
+    try {
+      await api.delete(`/cart/${id}`);
+      setCartItems(cartItems.filter((item) => item.id !== id));
+      toast.success('Товар удален из корзины');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Ошибка удаления товара');
+    }
+  };
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const handleCheckout = () => {
+    if (!selectedAddress) {
+      toast.error('Выберите адрес доставки');
+      return;
+    }
+    setIsPaymentModalOpen(true); 
+  };
+
+  const confirmPayment = async (isPaid) => {
+    setIsPaymentModalOpen(false);
+    try {
+      const res = await api.post('/checkout/checkout', {
+        address_id: selectedAddress,
+        tariff_code: '136',
+        payment_method: isPaid ? 'sberbank' : 'none',
+      });
+      toast.success('Заказ успешно создан');
+      setCartItems([]);
+      setDeliveryCost(null);
+      navigate('/profile/orders');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Ошибка оформления заказа');
+    }
+  };
+
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.quantity * item.price_at_time, 0);
 
   return (
-    <div>
-      <h1>Cart</h1>
-      {cart.length === 0 ? (
-        <p>Your cart is empty</p>
+    <div className="cart-container">
+      <h1>Корзина</h1>
+      {cartItems.length === 0 ? (
+        <p>Ваша корзина пуста</p>
       ) : (
         <>
-          {cart.map((item) => (
+          {cartItems.map((item) => (
             <CartItem
               key={`${item.id}-${item.size}`}
-              item={item}
+              item={{ ...item, name: item.Product.name, price: item.price_at_time }}
               updateCart={updateCart}
               removeFromCart={removeFromCart}
             />
           ))}
-          <p>Total: ${total.toFixed(2)}</p>
-          <Checkout />
+          <div className="cart-summary">
+            <p>Итого без доставки: {totalPrice.toFixed(2)} ₽</p>
+            {deliveryCost && (
+              <p>
+                Стоимость доставки: {deliveryCost.delivery_cost.toFixed(2)} ₽ (Ориентировочно: {deliveryCost.estimated_days.min}–{deliveryCost.estimated_days.max} дней)
+              </p>
+            )}
+            <p>Общая сумма: {(totalPrice + (deliveryCost?.delivery_cost || 0)).toFixed(2)} ₽</p>
+          </div>
+          <div className="address-selector">
+            <label>Выберите адрес:</label>
+            <select value={selectedAddress} onChange={(e) => setSelectedAddress(e.target.value)}>
+              <option value="">Выберите адрес</option>
+              {addresses.map((addr) => (
+                <option key={addr.id} value={addr.id}>
+                  {addr.city}, {addr.street}, {addr.house}
+                  {addr.building ? `, корп. ${addr.building}` : ''}
+                  {addr.apartment ? `, кв. ${addr.apartment}` : ''}
+                </option>
+              ))}
+            </select>
+            <button onClick={calculateDelivery}>Рассчитать доставку</button>
+          </div>
+          <button onClick={handleCheckout} disabled={!selectedAddress || cartItems.length === 0}>
+            Оформить заказ
+          </button>
         </>
+      )}
+
+      {isPaymentModalOpen && (
+        <div className="payment-modal-overlay">
+          <div className="payment-modal">
+            <h2>Подтверждение оплаты</h2>
+            <p>Общая сумма: {(totalPrice + (deliveryCost?.delivery_cost || 0)).toFixed(2)} ₽</p>
+            <p>Подтвердите, что оплата выполнена:</p>
+            <div className="payment-buttons">
+              <button onClick={() => confirmPayment(true)}>Оплатили</button>
+              <button onClick={() => confirmPayment(false)}>Не оплатили</button>
+              <button onClick={() => setIsPaymentModalOpen(false)}>Отмена</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

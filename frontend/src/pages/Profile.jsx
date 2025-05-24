@@ -33,7 +33,7 @@ function Profile() {
       try {
         const [userRes, orderRes, addressRes] = await Promise.all([
           api.get(`/users/${user.id}?page=${referralPage}&limit=${limit}`),
-          api.get(`/orders?user_id=${user.id}&page=${orderPage}&limit=${limit}`),
+          api.get(`/orders?page=${orderPage}&limit=${limit}`),
           api.get('/addresses'),
         ]);
         setProfile(userRes.data.user);
@@ -68,7 +68,7 @@ function Profile() {
   const handlePasswordResetLink = async () => {
     try {
       const response = await api.post('/auth/forgot-password', { email: profile.email });
-      setResetMessage(response.data.message || 'Ссылка для сброса отправлена(三秒后跳转至登陆页面)');
+      setResetMessage(response.data.message || 'Ссылка для сброса отправлена');
       setResetError('');
     } catch (err) {
       setResetError(err.response?.data?.message || 'Ошибка при отправке ссылки');
@@ -375,15 +375,29 @@ function Profile() {
                 <p>Заказы отсутствуют</p>
               ) : (
                 <>
-                  <ul>
-                    {orders.map((order) => (
-                      <li key={order.id}>
-                        <span>
-                          Заказ #{order.id} - Статус: {order.status} - Сумма: {order.total_price} ₽
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  {orders.map((order) => (
+                    <div key={order.id} className="order-card">
+                      <p>Номер заказа: {order.id}</p>
+                      <p>
+                        Статус: {order.status === 'pending' ? 'В обработке' : order.status === 'shipped' ? 'Отправлен' : order.status === 'delivered' ? 'Доставлен' : 'Отменен'}
+                      </p>
+                      <p>Общая сумма: {order.total_price.toFixed(2)} ₽</p>
+                      <p>
+                        Адрес: {order.Address?.city}, {order.Address?.street}, {order.Address?.house}
+                        {order.Address?.building ? `, корп. ${order.Address.building}` : ''}
+                        {order.Address?.apartment ? `, кв. ${order.Address.apartment}` : ''}
+                      </p>
+                      <p>Трек-номер: {order.tracking_number || 'Не указан'}</p>
+                      <h3>Товары:</h3>
+                      <ul>
+                        {order.OrderItems.map((item) => (
+                          <li key={item.id}>
+                            {item.Product.name} - Размер: {item.size} - Кол-во: {item.quantity} - {item.price_at_time.toFixed(2)} ₽
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                   <div className="pagination">
                     <button
                       disabled={orderPage === 1}
