@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../services/api';
 import CartItem from '../components/CartItem';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 function Cart() {
@@ -13,20 +14,24 @@ function Cart() {
   const [deliveryCost, setDeliveryCost] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
+
     const fetchCart = async () => {
       try {
         const res = await api.get('/cart');
-        setCartItems(res.data);
+        setCartItems(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
+        console.error('Ошибка загрузки корзины:', error);
         toast.error(error.response?.data?.message || 'Ошибка загрузки корзины');
       }
     };
+
     const fetchAddresses = async () => {
       try {
         const res = await api.get('/addresses');
@@ -35,9 +40,10 @@ function Cart() {
         toast.error(error.response?.data?.message || 'Ошибка загрузки адресов');
       }
     };
+
     fetchCart();
     fetchAddresses();
-  }, [user, navigate]);
+  }, [user, navigate, location.pathname]);
 
   const calculateDelivery = async () => {
     if (!selectedAddress) {
@@ -45,7 +51,10 @@ function Cart() {
       return;
     }
     try {
-      const res = await api.post('/checkout/calculate-delivery', { address_id: selectedAddress, tariff_code: '136' });
+      const res = await api.post('/checkout/calculate-delivery', {
+        address_id: selectedAddress,
+        tariff_code: '136',
+      });
       setDeliveryCost(res.data);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Ошибка расчета доставки');
@@ -56,6 +65,7 @@ function Cart() {
     try {
       const res = await api.put(`/cart/${id}`, { quantity });
       setCartItems(cartItems.map((item) => (item.id === id ? res.data : item)));
+      toast.success('Количество обновлено');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Ошибка обновления корзины');
     }
@@ -76,7 +86,11 @@ function Cart() {
       toast.error('Выберите адрес доставки');
       return;
     }
-    setIsPaymentModalOpen(true); 
+    if (cartItems.length === 0) {
+      toast.error('Корзина пуста');
+      return;
+    }
+    setIsPaymentModalOpen(true);
   };
 
   const confirmPayment = async (isPaid) => {
@@ -96,7 +110,10 @@ function Cart() {
     }
   };
 
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.quantity * item.price_at_time, 0);
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + item.quantity * (Number(item.price_at_time) || 0),
+    0
+  );
 
   return (
     <div className="cart-container">
@@ -108,20 +125,31 @@ function Cart() {
           {cartItems.map((item) => (
             <CartItem
               key={`${item.id}-${item.size}`}
-              item={{ ...item, name: item.Product.name, price: item.price_at_time }}
+              item={{
+                id: item.id,
+                size: item.size,
+                quantity: item.quantity,
+                price: Number(item.price_at_time) || 0,
+                name: item.Product?.name || 'Без названия',
+                image: item.Product?.ProductImages?.[0]?.url,
+              }}
               updateCart={updateCart}
               removeFromCart={removeFromCart}
             />
           ))}
+
           <div className="cart-summary">
             <p>Итого без доставки: {totalPrice.toFixed(2)} ₽</p>
             {deliveryCost && (
               <p>
-                Стоимость доставки: {deliveryCost.delivery_cost.toFixed(2)} ₽ (Ориентировочно: {deliveryCost.estimated_days.min}–{deliveryCost.estimated_days.max} дней)
+                Стоимость доставки: {deliveryCost.delivery_cost.toFixed(2)} ₽ (
+                Ориентировочно: {deliveryCost.estimated_days.min}–
+                {deliveryCost.estimated_days.max} дней)
               </p>
             )}
             <p>Общая сумма: {(totalPrice + (deliveryCost?.delivery_cost || 0)).toFixed(2)} ₽</p>
           </div>
+
           <div className="address-selector">
             <label>Выберите адрес:</label>
             <select value={selectedAddress} onChange={(e) => setSelectedAddress(e.target.value)}>
@@ -136,7 +164,11 @@ function Cart() {
             </select>
             <button onClick={calculateDelivery}>Рассчитать доставку</button>
           </div>
-          <button onClick={handleCheckout} disabled={!selectedAddress || cartItems.length === 0}>
+
+          <button
+            onClick={handleCheckout}
+            disabled={!selectedAddress || cartItems.length === 0}
+          >
             Оформить заказ
           </button>
         </>

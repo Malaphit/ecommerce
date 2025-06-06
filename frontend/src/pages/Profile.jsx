@@ -42,7 +42,7 @@ function Profile() {
           total: orderRes.data.total,
           pages: orderRes.data.pages,
         });
-        setAddresses(addressRes.data);
+        setAddresses(Array.isArray(addressRes.data) ? addressRes.data : []);
         setReferrals(userRes.data.referrals.rows);
         setReferralPagination({
           total: userRes.data.referrals.total,
@@ -50,6 +50,7 @@ function Profile() {
         });
       } catch (err) {
         setError('Не удалось загрузить профиль');
+        console.error('Ошибка загрузки профиля:', err);
       }
     };
     if (user) fetchProfile();
@@ -85,7 +86,7 @@ function Profile() {
         await api.post('/addresses', addressForm);
       }
       const addressRes = await api.get('/addresses');
-      setAddresses(addressRes.data);
+      setAddresses(Array.isArray(addressRes.data) ? addressRes.data : []);
       setAddressForm({ city: '', street: '', house: '', building: '', apartment: '', postal_code: '' });
       setEditAddressId(null);
     } catch (err) {
@@ -106,7 +107,7 @@ function Profile() {
     try {
       await api.delete(`/addresses/${id}`);
       const addressRes = await api.get('/addresses');
-      setAddresses(addressRes.data);
+      setAddresses(Array.isArray(addressRes.data) ? addressRes.data : []);
     } catch (err) {
       setError('Не удалось удалить адрес');
     }
@@ -379,20 +380,35 @@ function Profile() {
                     <div key={order.id} className="order-card">
                       <p>Номер заказа: {order.id}</p>
                       <p>
-                        Статус: {order.status === 'pending' ? 'В обработке' : order.status === 'shipped' ? 'Отправлен' : order.status === 'delivered' ? 'Доставлен' : 'Отменен'}
+                        Статус: {order.status === 'pending' ? 'В обработке' :
+                          order.status === 'shipped' ? 'Отправлен' :
+                          order.status === 'delivered' ? 'Доставлен' : 'Отменен'}
                       </p>
-                      <p>Общая сумма: {order.total_price.toFixed(2)} ₽</p>
+                      <p>Общая сумма: {(Number(order.total_price) || 0).toFixed(2)} ₽</p>
                       <p>
-                        Адрес: {order.Address?.city}, {order.Address?.street}, {order.Address?.house}
-                        {order.Address?.building ? `, корп. ${order.Address.building}` : ''}
-                        {order.Address?.apartment ? `, кв. ${order.Address.apartment}` : ''}
+                        Адрес: {order.Address ? (
+                          `${order.Address.city}, ${order.Address.street}, ${order.Address.house}` +
+                          `${order.Address.building ? `, корп. ${order.Address.building}` : ''}` +
+                          `${order.Address.apartment ? `, кв. ${order.Address.apartment}` : ''}` +
+                          `${order.Address.postal_code ? `, ${order.Address.postal_code}` : ''}`
+                        ) : 'Адрес не указан'}
                       </p>
                       <p>Трек-номер: {order.tracking_number || 'Не указан'}</p>
                       <h3>Товары:</h3>
                       <ul>
                         {order.OrderItems.map((item) => (
                           <li key={item.id}>
-                            {item.Product.name} - Размер: {item.size} - Кол-во: {item.quantity} - {item.price_at_time.toFixed(2)} ₽
+                            <span>
+                              {item.Product?.name || 'Товар не найден'} (Размер: {item.size}, Кол-во: {item.quantity})
+                            </span>
+                            <span> - {(Number(item.price_at_time) || 0).toFixed(2)} ₽</span>
+                            {item.Product?.ProductImages?.[0]?.url && (
+                              <img
+                                src={`${process.env.REACT_APP_API_URL}${item.Product.ProductImages[0].url}`}
+                                alt={item.Product.name}
+                                style={{ width: '50px', height: '50px', marginLeft: '10px' }}
+                              />
+                            )}
                           </li>
                         ))}
                       </ul>

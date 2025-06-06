@@ -1,4 +1,4 @@
-const { Order, User, Address, OrderItem, Product, Category } = require('../models'); 
+const { Order, User, Address, OrderItem, Product, Category, ProductImage } = require('../models');
 
 exports.getOrders = async (req, res) => {
   try {
@@ -15,19 +15,33 @@ exports.getOrders = async (req, res) => {
     const { count, rows } = await Order.findAndCountAll({
       where,
       include: [
-        { model: User, attributes: ['id', 'email', 'first_name', 'last_name'], required: false },
-        { model: Address, required: false },
+        {
+          model: User,
+          attributes: ['id', 'email', 'first_name', 'last_name'],
+          required: false,
+        },
+        {
+          model: Address,
+          attributes: ['id', 'city', 'street', 'house', 'building', 'apartment', 'postal_code'],
+          required: false,
+        },
         {
           model: OrderItem,
           required: false,
           include: [
             {
               model: Product,
+              attributes: ['id', 'name', 'price', 'available_sizes', 'category_id'],
               required: false,
               include: [
                 {
                   model: Category,
                   attributes: ['id', 'name', 'weight'],
+                  required: false,
+                },
+                {
+                  model: ProductImage,
+                  attributes: ['url'],
                   required: false,
                 },
               ],
@@ -42,7 +56,18 @@ exports.getOrders = async (req, res) => {
 
     const orders = rows.map(order => ({
       ...order.get({ plain: true }),
-      total_price: Number(order.total_price) || 0, 
+      total_price: Number(order.total_price) || 0,
+      Address: order.Address || null,
+      OrderItems: order.OrderItems.map(item => ({
+        ...item.get({ plain: true }),
+        price_at_time: Number(item.price_at_time) || 0,
+        Product: item.Product
+          ? {
+              ...item.Product.get({ plain: true }),
+              ProductImages: item.Product.ProductImages || [],
+            }
+          : null,
+      })),
     }));
 
     res.json({
@@ -61,16 +86,60 @@ exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id, {
       include: [
-        { model: User, attributes: ['id', 'email', 'first_name', 'last_name'] },
-        { model: Address },
-        { model: OrderItem, include: [{ model: Product, include: [{ model: Category }] }] },
+        {
+          model: User,
+          attributes: ['id', 'email', 'first_name', 'last_name'],
+          required: false,
+        },
+        {
+          model: Address,
+          attributes: ['id', 'city', 'street', 'house', 'building', 'apartment', 'postal_code'],
+          required: false,
+        },
+        {
+          model: OrderItem,
+          include: [
+            {
+              model: Product,
+              attributes: ['id', 'name', 'price', 'available_sizes', 'category_id'],
+              include: [
+                {
+                  model: Category,
+                  attributes: ['id', 'name', 'weight'],
+                  required: false,
+                },
+                {
+                  model: ProductImage,
+                  attributes: ['url'],
+                  required: false,
+                },
+              ],
+            },
+          ],
+        },
       ],
     });
     if (!order) {
       return res.status(404).json({ message: 'Заказ не найден' });
     }
-    res.json(order);
+    const formattedOrder = {
+      ...order.get({ plain: true }),
+      total_price: Number(order.total_price) || 0,
+      Address: order.Address || null,
+      OrderItems: order.OrderItems.map(item => ({
+        ...item.get({ plain: true }),
+        price_at_time: Number(item.price_at_time) || 0,
+        Product: item.Product
+          ? {
+              ...item.Product.get({ plain: true }),
+              ProductImages: item.Product.ProductImages || [],
+            }
+          : null,
+      })),
+    };
+    res.json(formattedOrder);
   } catch (error) {
+    console.error('Ошибка в getOrderById:', error, error.stack);
     res.status(500).json({ message: `Ошибка загрузки заказа: ${error.message}` });
   }
 };
@@ -110,7 +179,10 @@ exports.createOrder = async (req, res) => {
 
     let total_price = 0;
     for (const item of items) {
-      const product = await Product.findByPk(item.product_id, { include: [{ model: Category }], transaction: t });
+      const product = await Product.findByPk(item.product_id, {
+        include: [{ model: Category }],
+        transaction: t,
+      });
       if (!product) {
         await t.rollback();
         return res.status(404).json({ message: `Товар ${item.product_id} не найден` });
@@ -151,6 +223,7 @@ exports.createOrder = async (req, res) => {
     res.status(201).json({ message: 'Заказ создан', order_id: order.id });
   } catch (error) {
     await t.rollback();
+    console.error('Ошибка в createOrder:', error, error.stack);
     res.status(500).json({ message: `Ошибка создания заказа: ${error.message}` });
   }
 };
@@ -191,6 +264,7 @@ exports.updateOrder = async (req, res) => {
     res.json({ message: 'Заказ обновлен', order });
   } catch (error) {
     await t.rollback();
+    console.error('Ошибка в updateOrder:', error, error.stack);
     res.status(500).json({ message: `Ошибка обновления заказа: ${error.message}` });
   }
 };
@@ -208,6 +282,7 @@ exports.deleteOrder = async (req, res) => {
     res.json({ message: 'Заказ удален' });
   } catch (error) {
     await t.rollback();
+    console.error('Ошибка в deleteOrder:', error, error.stack);
     res.status(500).json({ message: `Ошибка удаления заказа: ${error.message}` });
   }
 };
