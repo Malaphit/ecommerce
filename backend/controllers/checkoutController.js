@@ -8,20 +8,23 @@ const {
   Category,
   OrderStatusHistory,
 } = require('../models');
+const dotenv = require('dotenv');
+const sdekService = require('../services/sdek');
 
-const { calculateDelivery } = require('../services/sdek');
+dotenv.config();
 
-exports.calculateDelivery = async (req, res) =>{
+exports.calculateDelivery = async (req, res) => {
   try {
     const { address_id, tariff_code = '136' } = req.body;
 
-    console.log('🛒 calculateDelivery вызван от пользователя:', req.user);
+    console.log('🛒 calculateDelivery вызван от пользователя:', {
+      userId: req.user?.id,
+      cartOrderId: req.user?.cartOrderId,
+    });
     console.log('🔍 req.body:', req.body);
-    console.log('🔍 req.user.cartOrderId:', req.user.cartOrderId);
 
-    if (!req.user.cartOrderId) {
-      console.log('❗ Нет cartOrderId у пользователя');
-      return res.status(400).json({ message: 'Корзина пуста (нет cartOrderId)' });
+    if (!req.user?.id || !req.user.cartOrderId) {
+      return res.status(401).json({ message: 'Пользователь не авторизован или корзина пуста' });
     }
 
     const order = await Order.findOne({
@@ -33,16 +36,13 @@ exports.calculateDelivery = async (req, res) =>{
       include: [
         {
           model: OrderItem,
-          include: [{ model: Product, include: [Category] }],
+          include: [{ model: Product, include: [{ model: Category, attributes: ['id', 'name', 'weight'] }], required: true }],
+          required: true,
         },
       ],
     });
 
-    if (!order) {
-      return res.status(404).json({ message: 'Заказ не найден или не принадлежит пользователю' });
-    }
-
-    if (!order.OrderItems || order.OrderItems.length === 0) {
+    if (!order || !order.OrderItems.length) {
       return res.status(400).json({ message: 'В корзине нет товаров' });
     }
 
@@ -51,6 +51,19 @@ exports.calculateDelivery = async (req, res) =>{
       return res.status(404).json({ message: 'Адрес не найден' });
     }
 
+    const invalidItems = order.OrderItems.filter(
+      (item) => !item.Product?.Category?.weight || item.Product.Category.weight <= 0
+    );
+    if (invalidItems.length > 0) {
+      return res.status(400).json({
+        message: 'Некоторые товары не имеют корректного веса в категории',
+        invalidItems: invalidItems.map((item) => ({
+          product_id: item.product_id,
+          name: item.Product?.name || 'Неизвестный товар',
+        })),
+      });
+    }
+
     const packages = order.OrderItems.map((item) => ({
       weight: item.Product.Category.weight * item.quantity,
       length: 30,
@@ -58,25 +71,31 @@ exports.calculateDelivery = async (req, res) =>{
       height: 10,
       items: [
         {
-          ware_key: item.product_id,
+          ware_key: item.product_id.toString(),
           payment: 0,
-          cost: item.price_at_time,
+          cost: Number(item.price_at_time) || 0,
           amount: item.quantity,
         },
       ],
     }));
 
-    const { delivery_sum, period_min, period_max } = response.data;
-    res.json({
-      delivery_cost: delivery_sum,
+    const { delivery_sum, period_min, period_max } = await sdekService.calculateDelivery({
+      address,
+      tariff_code,
+      packages,
+    });
+
+    return res.json({
+      delivery_cost: Number(delivery_sum) || 0,
       estimated_days: { min: period_min, max: period_max },
       tariff_code,
     });
   } catch (error) {
-    console.error(' Ошибка в calculateDelivery:', error.response?.data || error.message);
-    res
-      .status(500)
-      .json({ message: error.response?.data?.message || 'Ошибка расчета доставки' });
+    console.error('Ошибка в calculateDelivery:', {
+      message: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ message: 'Ошибка расчета доставки' });
   }
 };
 
@@ -85,25 +104,56 @@ exports.checkout = async (req, res) => {
   try {
     const { address_id, tariff_code = '136', payment_method = 'sberbank' } = req.body;
 
-    if (!req.user.cartOrderId) {
+    console.log('🛍️ checkout вызван от пользователя:', {
+      userId: req.user?.id,
+      cartOrderId: req.user?.cartOrderId,
+    });
+    console.log('🔍 req.body:', req.body);
+
+    if (!req.user?.id || !req.user.cartOrderId) {
       await t.rollback();
-      return res.status(400).json({ message: 'Корзина пуста' });
+      return res.status(401).json({ message: 'Пользователь не авторизован или корзина пуста' });
     }
 
-    const address = await Address.findByPk(address_id);
+    const address = await Address.findByPk(address_id, { transaction: t });
     if (!address) {
       await t.rollback();
       return res.status(404).json({ message: 'Адрес не найден' });
     }
 
-    const order = await Order.findByPk(req.user.cartOrderId, {
-      include: [{ model: OrderItem, include: [{ model: Product, include: [{ model: Category }] }] }],
+    const order = await Order.findOne({
+      where: {
+        id: req.user.cartOrderId,
+        user_id: req.user.id,
+        status: 'pending',
+      },
+      include: [
+        {
+          model: OrderItem,
+          include: [{ model: Product, include: [{ model: Category, attributes: ['id', 'name', 'weight'] }], required: true }],
+          required: true,
+        },
+      ],
       transaction: t,
     });
 
-    if (!order || order.OrderItems.length === 0) {
+    if (!order || !order.OrderItems.length) {
       await t.rollback();
-      return res.status(400).json({ message: 'Корзина пуста' });
+      return res.status(400).json({ message: 'Корзина пуста или заказ не найден' });
+    }
+
+    const invalidItems = order.OrderItems.filter(
+      (item) => !item.Product?.Category?.weight || item.Product.Category.weight <= 0
+    );
+    if (invalidItems.length > 0) {
+      await t.rollback();
+      return res.status(400).json({
+        message: 'Некоторые товары не имеют корректного веса в категории',
+        invalidItems: invalidItems.map((item) => ({
+          product_id: item.product_id,
+          name: item.Product?.name || 'Неизвестный товар',
+        })),
+      });
     }
 
     const packages = order.OrderItems.map((item) => ({
@@ -113,55 +163,27 @@ exports.checkout = async (req, res) => {
       height: 10,
       items: [
         {
-          ware_key: item.product_id,
+          ware_key: item.product_id.toString(),
           payment: 0,
-          cost: item.price_at_time,
+          cost: Number(item.price_at_time) || 0,
           amount: item.quantity,
         },
       ],
     }));
 
-    const deliveryResponse = await axios.post(
-      `${CDEK_API_URL}/calculator/tariff`,
-      {
-        tariff_code,
-        from_location: { postal_code: '101000' },
-        to_location: { postal_code: address.postal_code || '101000' },
-        packages,
-      },
-      {
-        auth: { username: CDEK_ACCOUNT, password: CDEK_SECURE_PASSWORD },
-      }
-    );
+    const { delivery_sum } = await sdekService.calculateDelivery({
+      address,
+      tariff_code,
+      packages,
+    });
+    const delivery_cost = Number(delivery_sum) || 0;
 
-    const delivery_cost = deliveryResponse.data.delivery_sum;
-
-    const cdekOrderResponse = await axios.post(
-      `${CDEK_API_URL}/orders`,
-      {
-        tariff_code,
-        sender: { name: 'Ваш магазин' },
-        recipient: {
-          name: `${req.user.first_name} ${req.user.last_name}`,
-          phones: [{ number: req.user.phone }],
-          email: req.user.email,
-        },
-        from_location: { postal_code: '101000' },
-        to_location: {
-          postal_code: address.postal_code,
-          city: address.city,
-          address: `${address.street}, ${address.house}${
-            address.building ? `, корп. ${address.building}` : ''
-          }${address.apartment ? `, кв. ${address.apartment}` : ''}`,
-        },
-        packages,
-      },
-      {
-        auth: { username: CDEK_ACCOUNT, password: CDEK_SECURE_PASSWORD },
-      }
-    );
-
-    const tracking_number = cdekOrderResponse.data.entity.uuid;
+    const tracking_number = await sdekService.createOrder({
+      tariff_code,
+      address,
+      user: req.user,
+      packages,
+    });
 
     await order.update(
       {
@@ -204,8 +226,10 @@ exports.checkout = async (req, res) => {
     });
   } catch (error) {
     await t.rollback();
-    res.status(500).json({
-      message: error.response?.data?.message || 'Ошибка создания заказа',
+    console.error('Ошибка в checkout:', {
+      message: error.message,
+      stack: error.stack,
     });
+    res.status(500).json({ message: 'Ошибка создания заказа' });
   }
 };

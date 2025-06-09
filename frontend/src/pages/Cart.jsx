@@ -2,12 +2,11 @@ import { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-toastify';
 import api from '../services/api';
 import CartItem from '../components/CartItem';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 function Cart() {
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const [cartItems, setCartItems] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState('');
@@ -18,6 +17,7 @@ function Cart() {
 
   useEffect(() => {
     if (!user) {
+      console.log('Cart: Нет пользователя, перенаправление на логин', { pathname: location.pathname });
       navigate('/login', { state: { from: location.pathname } });
       return;
     }
@@ -25,25 +25,44 @@ function Cart() {
     const fetchCart = async () => {
       try {
         const res = await api.get('/cart');
+        console.log('Cart: Корзина загружена', { items: res.data.length });
         setCartItems(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
-        console.error('Ошибка загрузки корзины:', error);
-        toast.error(error.response?.data?.message || 'Ошибка загрузки корзины');
+        console.error('Cart: Ошибка загрузки корзины', {
+          status: error.response?.status,
+          message: error.response?.data?.message || error.message,
+        });
+        if (error.response?.status === 401) {
+          toast.error('Сессия истекла. Пожалуйста, войдите снова.');
+          logout();
+        } else {
+          toast.error(error.response?.data?.message || 'Ошибка загрузки корзины');
+        }
       }
     };
 
     const fetchAddresses = async () => {
       try {
         const res = await api.get('/addresses');
+        console.log('Cart: Адреса загружены', { addresses: res.data.length });
         setAddresses(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Ошибка загрузки адресов');
+        console.error('Cart: Ошибка загрузки адресов', {
+          status: error.response?.status,
+          message: error.response?.data?.message || error.message,
+        });
+        if (error.response?.status === 401) {
+          toast.error('Сессия истекла. Пожалуйста, войдите снова.');
+          logout();
+        } else {
+          toast.error(error.response?.data?.message || 'Ошибка загрузки адресов');
+        }
       }
     };
 
     fetchCart();
     fetchAddresses();
-  }, [user, navigate, location.pathname]);
+  }, [user, navigate, location.pathname, logout]);
 
   const calculateDelivery = async () => {
     if (!selectedAddress) {
@@ -51,38 +70,70 @@ function Cart() {
       return;
     }
     try {
+      console.log('Cart: Расчет доставки', { address_id: selectedAddress });
       const res = await api.post('/checkout/calculate-delivery', {
         address_id: selectedAddress,
         tariff_code: '136',
       });
+      if (!res.data.delivery_cost) {
+        throw new Error('Стоимость доставки не получена');
+      }
+      console.log('Cart: Доставка рассчитана', res.data);
       setDeliveryCost(res.data);
+      toast.success('Стоимость доставки рассчитана');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Ошибка расчета доставки');
+      console.error('Cart: Ошибка расчета доставки', {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+      });
+      if (error.response?.status === 401) {
+        toast.error('Сессия истекла. Пожалуйста, войдите снова.');
+        logout();
+      } else {
+        toast.error(error.response?.data?.message || 'Ошибка расчета доставки. Попробуйте позже.');
+      }
     }
   };
 
   const updateCart = async (id, quantity) => {
     try {
       const res = await api.put(`/cart/${id}`, { quantity });
+      console.log('Cart: Элемент корзины обновлен', { id, quantity });
       setCartItems(cartItems.map((item) => (item.id === id ? res.data : item)));
       toast.success('Количество обновлено');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Ошибка обновления корзины');
+      console.error('Cart: Ошибка обновления корзины', {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+      });
+      if (error.response?.status === 401) {
+        toast.error('Сессия истекла. Пожалуйста, войдите снова.');
+        logout();
+      } else {
+        toast.error(error.response?.data?.message || 'Ошибка обновления корзины');
+      }
     }
   };
 
   const removeFromCart = async (id) => {
     try {
-      console.log('Отправляем запрос DELETE /cart/' + id);
       await api.delete(`/cart/${id}`);
+      console.log('Cart: Элемент удален из корзины', { id });
       setCartItems(cartItems.filter((item) => item.id !== id));
       toast.success('Товар удален из корзины');
     } catch (error) {
-      console.error('Ошибка удаления товара:', error.response?.data || error.message);
-      toast.error(error.response?.data?.message || 'Ошибка удаления товара');
+      console.error('Cart: Ошибка удаления товара', {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+      });
+      if (error.response?.status === 401) {
+        toast.error('Сессия истекла. Пожалуйста, войдите снова.');
+        logout();
+      } else {
+        toast.error(error.response?.data?.message || 'Ошибка удаления товара');
+      }
     }
   };
-  
 
   const handleCheckout = () => {
     if (!selectedAddress) {
@@ -93,10 +144,12 @@ function Cart() {
       toast.error('Корзина пуста');
       return;
     }
+    console.log('Cart: Открытие модального окна оплаты');
     setIsPaymentModalOpen(true);
   };
 
   const confirmPayment = async (isPaid) => {
+    console.log('Cart: Подтверждение оплаты', { isPaid });
     setIsPaymentModalOpen(false);
     try {
       const res = await api.post('/checkout/checkout', {
@@ -104,12 +157,22 @@ function Cart() {
         tariff_code: '136',
         payment_method: isPaid ? 'sberbank' : 'none',
       });
+      console.log('Cart: Заказ успешно создан', { order_id: res.data.order_id });
       toast.success('Заказ успешно создан');
       setCartItems([]);
       setDeliveryCost(null);
       navigate('/profile/orders');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Ошибка оформления заказа');
+      console.error('Cart: Ошибка при оформлении заказа', {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+      });
+      if (error.response?.status === 401) {
+        toast.error('Сессия истекла. Пожалуйста, войдите снова.');
+        logout();
+      } else {
+        toast.error(error.response?.data?.message || 'Ошибка оформления заказа. Попробуйте позже.');
+      }
     }
   };
 
@@ -155,7 +218,13 @@ function Cart() {
 
           <div className="address-selector">
             <label>Выберите адрес:</label>
-            <select value={selectedAddress} onChange={(e) => setSelectedAddress(Number(e.target.value))}>
+            <select
+              value={selectedAddress}
+              onChange={(e) => {
+                console.log('Cart: Выбран адрес', { address_id: e.target.value });
+                setSelectedAddress(Number(e.target.value));
+              }}
+            >
               <option value="">Выберите адрес</option>
               {addresses.map((addr) => (
                 <option key={addr.id} value={addr.id}>
@@ -186,7 +255,14 @@ function Cart() {
             <div className="payment-buttons">
               <button onClick={() => confirmPayment(true)}>Оплатили</button>
               <button onClick={() => confirmPayment(false)}>Не оплатили</button>
-              <button onClick={() => setIsPaymentModalOpen(false)}>Отмена</button>
+              <button
+                onClick={() => {
+                  console.log('Cart: Закрытие модального окна оплаты');
+                  setIsPaymentModalOpen(false);
+                }}
+              >
+                Отмена
+              </button>
             </div>
           </div>
         </div>
