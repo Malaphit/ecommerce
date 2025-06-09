@@ -73,13 +73,16 @@ function Cart() {
 
   const removeFromCart = async (id) => {
     try {
+      console.log('Отправляем запрос DELETE /cart/' + id);
       await api.delete(`/cart/${id}`);
       setCartItems(cartItems.filter((item) => item.id !== id));
       toast.success('Товар удален из корзины');
     } catch (error) {
+      console.error('Ошибка удаления товара:', error.response?.data || error.message);
       toast.error(error.response?.data?.message || 'Ошибка удаления товара');
     }
   };
+  
 
   const handleCheckout = () => {
     if (!selectedAddress) {
@@ -152,7 +155,7 @@ function Cart() {
 
           <div className="address-selector">
             <label>Выберите адрес:</label>
-            <select value={selectedAddress} onChange={(e) => setSelectedAddress(e.target.value)}>
+            <select value={selectedAddress} onChange={(e) => setSelectedAddress(Number(e.target.value))}>
               <option value="">Выберите адрес</option>
               {addresses.map((addr) => (
                 <option key={addr.id} value={addr.id}>

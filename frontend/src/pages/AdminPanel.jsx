@@ -312,7 +312,6 @@ function AdminPanel() {
                   </select>
                 </div>
               </div>
-              <OrderForm onSave={handleSave} />
               {orders.length === 0 ? (
                 <p>Заказы отсутствуют</p>
               ) : (

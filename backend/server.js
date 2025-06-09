@@ -33,7 +33,7 @@ app.use('/api/referrals', referralRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/checkoutRoutes', checkoutRoutes);
+app.use('/api/checkout', checkoutRoutes);
 
 sequelize.authenticate()
   .then(() => {

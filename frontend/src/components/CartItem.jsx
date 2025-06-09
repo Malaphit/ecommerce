@@ -16,14 +16,14 @@ function CartItem({ item, updateCart, removeFromCart }) {
         <p>Цена: {Number(item.price).toFixed(2)} ₽</p>
         <p>Количество: {item.quantity}</p>
         <p>Итого: {(Number(item.price) * item.quantity).toFixed(2)} ₽</p>
-        <button onClick={() => updateCart(item.id, item.quantity + 1)}>+</button>
         <button
-          onClick={() => updateCart(item.id, item.quantity - 1)}
-          disabled={item.quantity <= 1}
-        >
-          -
-        </button>
-        <button onClick={() => removeFromCart(item.id)}>Удалить</button>
+  onClick={() => {
+    console.log('Удалить товар с id:', item.id);
+    removeFromCart(item.id);
+  }}
+>
+  Удалить
+</button>
       </div>
     </div>
   );

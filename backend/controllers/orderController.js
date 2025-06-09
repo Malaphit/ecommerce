@@ -1,4 +1,4 @@
-const { Order, User, Address, OrderItem, Product, Category, ProductImage } = require('../models');
+const { Order, User, Address, OrderItem, Product, Category,ProductImage, OrderStatusHistory, sequelize } = require('../models');
 
 exports.getOrders = async (req, res) => {
   try {
@@ -114,32 +114,48 @@ exports.getOrderById = async (req, res) => {
                   required: false,
                 },
               ],
+              required: false,
             },
           ],
+          required: false,
         },
       ],
     });
+
     if (!order) {
       return res.status(404).json({ message: 'Заказ не найден' });
     }
+
     const formattedOrder = {
       ...order.get({ plain: true }),
       total_price: Number(order.total_price) || 0,
-      Address: order.Address || null,
-      OrderItems: order.OrderItems.map(item => ({
-        ...item.get({ plain: true }),
-        price_at_time: Number(item.price_at_time) || 0,
-        Product: item.Product
-          ? {
-              ...item.Product.get({ plain: true }),
-              ProductImages: item.Product.ProductImages || [],
-            }
-          : null,
-      })),
+      Address: order.Address ? { ...order.Address.get({ plain: true }) } : null,
+      OrderItems: Array.isArray(order.OrderItems)
+        ? order.OrderItems.map(item => ({
+            ...item.get({ plain: true }),
+            price_at_time: Number(item.price_at_time) || 0,
+            Product: item.Product
+              ? {
+                  ...item.Product.get({ plain: true }),
+                  name: item.Product.name || 'Товар не найден',
+                  price: Number(item.Product.price) || 0,
+                  available_sizes: Array.isArray(item.Product.available_sizes) ? item.Product.available_sizes : [],
+                  category_id: item.Product.category_id || null,
+                  Category: item.Product.Category ? { ...item.Product.Category.get({ plain: true }) } : null,
+                  ProductImages: Array.isArray(item.Product.ProductImages) ? item.Product.ProductImages : [],
+                }
+              : null,
+          }))
+        : [],
     };
+
     res.json(formattedOrder);
   } catch (error) {
-    console.error('Ошибка в getOrderById:', error, error.stack);
+    console.error('Ошибка в getOrderById:', {
+      message: error.message,
+      stack: error.stack,
+      orderId: req.params.id,
+    });
     res.status(500).json({ message: `Ошибка загрузки заказа: ${error.message}` });
   }
 };
@@ -147,69 +163,59 @@ exports.getOrderById = async (req, res) => {
 exports.createOrder = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { user_id, address_id, items } = req.body;
-    if (req.user.role === 'user' && user_id !== req.user.id) {
+    const { address_id } = req.body;
+
+    if (!req.user || !req.user.id) {
       await t.rollback();
-      return res.status(403).json({ message: 'Недостаточно прав' });
+      return res.status(401).json({ message: 'Пользователь не авторизован' });
     }
-    const user = await User.findByPk(user_id, { transaction: t });
+
+    const user = await User.findByPk(req.user.id, { transaction: t });
     if (!user) {
       await t.rollback();
-      return res.status(404).json({ message: 'Пользователь не найден' });
+      return res.status(404).json({ message: `Пользователь не найден` });
     }
+
+    const order = await Order.findByPk(user.cartOrderId, {
+      include: [OrderItem],
+      transaction: t,
+    });
+
+    if (!order || order.status !== 'pending') {
+      await t.rollback();
+      return res.status(400).json({ message: 'Корзина пуста или недействительна' });
+    }
+
+    if (!address_id || isNaN(address_id)) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Некорректный или отсутствующий address_id' });
+    }
+
     const address = await Address.findByPk(address_id, { transaction: t });
     if (!address) {
       await t.rollback();
       return res.status(404).json({ message: 'Адрес не найден' });
     }
-    if (!items || !Array.isArray(items) || items.length === 0) {
+
+    if (!order.OrderItems || order.OrderItems.length === 0) {
       await t.rollback();
-      return res.status(400).json({ message: 'Не указаны товары' });
+      return res.status(400).json({ message: 'Корзина пуста' });
     }
 
-    const order = await Order.create(
+    let total_price = 0;
+    for (const item of order.OrderItems) {
+      total_price += Number(item.price_at_time) * item.quantity;
+    }
+
+    await order.update(
       {
-        user_id,
         address_id,
-        total_price: 0,
+        total_price,
         status: 'pending',
       },
       { transaction: t }
     );
 
-    let total_price = 0;
-    for (const item of items) {
-      const product = await Product.findByPk(item.product_id, {
-        include: [{ model: Category }],
-        transaction: t,
-      });
-      if (!product) {
-        await t.rollback();
-        return res.status(404).json({ message: `Товар ${item.product_id} не найден` });
-      }
-      if (!product.available_sizes.includes(parseInt(item.size))) {
-        await t.rollback();
-        return res.status(400).json({ message: `Недопустимый размер для товара ${item.product_id}` });
-      }
-      if (item.quantity < 1) {
-        await t.rollback();
-        return res.status(400).json({ message: 'Количество должно быть не менее 1' });
-      }
-      const price_at_time = product.price;
-      total_price += price_at_time * item.quantity;
-      await OrderItem.create(
-        {
-          order_id: order.id,
-          product_id: item.product_id,
-          size: item.size,
-          quantity: item.quantity,
-          price_at_time,
-        },
-        { transaction: t }
-      );
-    }
-
-    await order.update({ total_price }, { transaction: t });
     await OrderStatusHistory.create(
       {
         order_id: order.id,
@@ -219,11 +225,17 @@ exports.createOrder = async (req, res) => {
       { transaction: t }
     );
 
+    await user.update({ cartOrderId: null }, { transaction: t });
+
     await t.commit();
-    res.status(201).json({ message: 'Заказ создан', order_id: order.id });
+    res.status(201).json({ message: 'Заказ успешно создан', order_id: order.id });
   } catch (error) {
     await t.rollback();
-    console.error('Ошибка в createOrder:', error, error.stack);
+    console.error('Ошибка в createOrder:', {
+      message: error.message,
+      stack: error.stack,
+      input: req.body,
+    });
     res.status(500).json({ message: `Ошибка создания заказа: ${error.message}` });
   }
 };
@@ -231,24 +243,47 @@ exports.createOrder = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   const t = await sequelize.transaction();
   try {
+    if (!req.body || typeof req.body !== 'object') {
+      await t.rollback();
+      return res.status(400).json({ message: 'Некорректный JSON в запросе' });
+    }
+
     const { status, address_id } = req.body;
+    console.log('updateOrder input:', { order_id: req.params.id, status, address_id });
+
+    if (!req.params.id || isNaN(req.params.id)) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Некорректный ID заказа' });
+    }
+
     const order = await Order.findByPk(req.params.id, { transaction: t });
     if (!order) {
       await t.rollback();
       return res.status(404).json({ message: 'Заказ не найден' });
     }
+
     const updates = {};
     if (status && ['pending', 'shipped', 'delivered', 'cancelled'].includes(status)) {
       updates.status = status;
     }
-    if (address_id) {
-      const address = await Address.findByPk(address_id, { transaction: t });
-      if (!address) {
-        await t.rollback();
-        return res.status(404).json({ message: 'Адрес не найден' });
+    if (address_id !== undefined) {
+      if (address_id && !isNaN(address_id)) {
+        const address = await Address.findByPk(address_id, { transaction: t });
+        if (!address) {
+          await t.rollback();
+          return res.status(404).json({ message: `Адрес с ID ${address_id} не найден` });
+        }
+        updates.address_id = address_id;
+      } else {
+        updates.address_id = null;
       }
-      updates.address_id = address_id;
     }
+
+    if (Object.keys(updates).length === 0) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Не указаны данные для обновления' });
+    }
+
     await order.update(updates, { transaction: t });
     if (status) {
       await OrderStatusHistory.create(
@@ -260,11 +295,17 @@ exports.updateOrder = async (req, res) => {
         { transaction: t }
       );
     }
+
     await t.commit();
-    res.json({ message: 'Заказ обновлен', order });
+    res.json({ message: 'Заказ успешно обновлен', order: order.get({ plain: true }) });
   } catch (error) {
     await t.rollback();
-    console.error('Ошибка в updateOrder:', error, error.stack);
+    console.error('Ошибка в updateOrder:', {
+      message: error.message,
+      stack: error.stack,
+      orderId: req.params.id,
+      input: req.body,
+    });
     res.status(500).json({ message: `Ошибка обновления заказа: ${error.message}` });
   }
 };
@@ -272,17 +313,29 @@ exports.updateOrder = async (req, res) => {
 exports.deleteOrder = async (req, res) => {
   const t = await sequelize.transaction();
   try {
+    if (!req.params.id || isNaN(req.params.id)) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Некорректный ID заказа' });
+    }
+
+    console.log('deleteOrder input:', { order_id: req.params.id });
+
     const order = await Order.findByPk(req.params.id, { transaction: t });
     if (!order) {
       await t.rollback();
       return res.status(404).json({ message: 'Заказ не найден' });
     }
+
     await order.destroy({ transaction: t });
     await t.commit();
-    res.json({ message: 'Заказ удален' });
+    res.json({ message: 'Заказ успешно удален' });
   } catch (error) {
     await t.rollback();
-    console.error('Ошибка в deleteOrder:', error, error.stack);
+    console.error('Ошибка в deleteOrder:', {
+      message: error.message,
+      stack: error.stack,
+      orderId: req.params.id,
+    });
     res.status(500).json({ message: `Ошибка удаления заказа: ${error.message}` });
   }
 };

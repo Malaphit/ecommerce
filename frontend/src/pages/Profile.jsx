@@ -36,6 +36,7 @@ function Profile() {
           api.get(`/orders?page=${orderPage}&limit=${limit}`),
           api.get('/addresses'),
         ]);
+        console.log('Order API Response:', orderRes.data);
         setProfile(userRes.data.user);
         setOrders(orderRes.data.orders);
         setOrderPagination({

@@ -30,7 +30,7 @@ exports.login = async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ message: 'Неверные учетные данные' });
     }
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, role: user.role });
   } catch (error) {
     res.status(400).json({ message: error.message });

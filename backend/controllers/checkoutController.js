@@ -1,49 +1,70 @@
-const axios = require('axios');
-const { Order, OrderItem, Address, Payment, sequelize } = require('../models');
+const {
+  Order,
+  OrderItem,
+  Address,
+  Product,
+  Payment,
+  sequelize,
+  Category,
+  OrderStatusHistory,
+} = require('../models');
 
-const CDEK_API_URL = 'https://api.cdek.ru/v2';
-const CDEK_ACCOUNT = process.env.CDEK_ACCOUNT;
-const CDEK_SECURE_PASSWORD = process.env.CDEK_SECURE_PASSWORD;
+const { calculateDelivery } = require('../services/sdek');
 
-exports.calculateDelivery = async (req, res) => {
+exports.calculateDelivery = async (req, res) =>{
   try {
     const { address_id, tariff_code = '136' } = req.body;
+
+    console.log('🛒 calculateDelivery вызван от пользователя:', req.user);
+    console.log('🔍 req.body:', req.body);
+    console.log('🔍 req.user.cartOrderId:', req.user.cartOrderId);
+
     if (!req.user.cartOrderId) {
-      return res.status(400).json({ message: 'Корзина пуста' });
+      console.log('❗ Нет cartOrderId у пользователя');
+      return res.status(400).json({ message: 'Корзина пуста (нет cartOrderId)' });
     }
+
+    const order = await Order.findOne({
+      where: {
+        id: req.user.cartOrderId,
+        user_id: req.user.id,
+        status: 'pending',
+      },
+      include: [
+        {
+          model: OrderItem,
+          include: [{ model: Product, include: [Category] }],
+        },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Заказ не найден или не принадлежит пользователю' });
+    }
+
+    if (!order.OrderItems || order.OrderItems.length === 0) {
+      return res.status(400).json({ message: 'В корзине нет товаров' });
+    }
+
     const address = await Address.findByPk(address_id);
     if (!address) {
       return res.status(404).json({ message: 'Адрес не найден' });
     }
 
-    const orderItems = await OrderItem.findAll({
-      where: { order_id: req.user.cartOrderId },
-      include: [{ model: Product, include: [{ model: Category }] }],
-    });
-    if (orderItems.length === 0) {
-      return res.status(400).json({ message: 'Корзина пуста' });
-    }
-
-    const packages = orderItems.map((item) => ({
+    const packages = order.OrderItems.map((item) => ({
       weight: item.Product.Category.weight * item.quantity,
       length: 30,
       width: 20,
       height: 10,
-      items: [{ ware_key: item.product_id, payment: 0, cost: item.price_at_time, amount: item.quantity }],
+      items: [
+        {
+          ware_key: item.product_id,
+          payment: 0,
+          cost: item.price_at_time,
+          amount: item.quantity,
+        },
+      ],
     }));
-
-    const response = await axios.post(
-      `${CDEK_API_URL}/calculator/tariff`,
-      {
-        tariff_code,
-        from_location: { postal_code: '101000' },
-        to_location: { postal_code: address.postal_code || '101000' },
-        packages,
-      },
-      {
-        auth: { username: CDEK_ACCOUNT, password: CDEK_SECURE_PASSWORD },
-      }
-    );
 
     const { delivery_sum, period_min, period_max } = response.data;
     res.json({
@@ -52,7 +73,10 @@ exports.calculateDelivery = async (req, res) => {
       tariff_code,
     });
   } catch (error) {
-    res.status(500).json({ message: error.response?.data?.message || 'Ошибка расчета доставки' });
+    console.error(' Ошибка в calculateDelivery:', error.response?.data || error.message);
+    res
+      .status(500)
+      .json({ message: error.response?.data?.message || 'Ошибка расчета доставки' });
   }
 };
 
@@ -60,10 +84,12 @@ exports.checkout = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { address_id, tariff_code = '136', payment_method = 'sberbank' } = req.body;
+
     if (!req.user.cartOrderId) {
       await t.rollback();
       return res.status(400).json({ message: 'Корзина пуста' });
     }
+
     const address = await Address.findByPk(address_id);
     if (!address) {
       await t.rollback();
@@ -74,6 +100,7 @@ exports.checkout = async (req, res) => {
       include: [{ model: OrderItem, include: [{ model: Product, include: [{ model: Category }] }] }],
       transaction: t,
     });
+
     if (!order || order.OrderItems.length === 0) {
       await t.rollback();
       return res.status(400).json({ message: 'Корзина пуста' });
@@ -84,7 +111,14 @@ exports.checkout = async (req, res) => {
       length: 30,
       width: 20,
       height: 10,
-      items: [{ ware_key: item.product_id, payment: 0, cost: item.price_at_time, amount: item.quantity }],
+      items: [
+        {
+          ware_key: item.product_id,
+          payment: 0,
+          cost: item.price_at_time,
+          amount: item.quantity,
+        },
+      ],
     }));
 
     const deliveryResponse = await axios.post(
@@ -116,7 +150,9 @@ exports.checkout = async (req, res) => {
         to_location: {
           postal_code: address.postal_code,
           city: address.city,
-          address: `${address.street}, ${address.house}${address.building ? `, корп. ${address.building}` : ''}${address.apartment ? `, кв. ${address.apartment}` : ''}`,
+          address: `${address.street}, ${address.house}${
+            address.building ? `, корп. ${address.building}` : ''
+          }${address.apartment ? `, кв. ${address.apartment}` : ''}`,
         },
         packages,
       },
@@ -131,7 +167,7 @@ exports.checkout = async (req, res) => {
       {
         address_id,
         total_price: order.total_price + delivery_cost,
-        status: 'pending',
+        status: 'confirmed',
         tracking_number,
       },
       { transaction: t }
@@ -152,7 +188,7 @@ exports.checkout = async (req, res) => {
     await OrderStatusHistory.create(
       {
         order_id: order.id,
-        status: 'pending',
+        status: 'confirmed',
         changed_at: new Date(),
       },
       { transaction: t }
@@ -161,9 +197,15 @@ exports.checkout = async (req, res) => {
     await req.user.update({ cartOrderId: null }, { transaction: t });
 
     await t.commit();
-    res.json({ message: 'Заказ успешно создан', order_id: order.id, tracking_number });
+    res.json({
+      message: 'Заказ успешно создан',
+      order_id: order.id,
+      tracking_number,
+    });
   } catch (error) {
     await t.rollback();
-    res.status(500).json({ message: error.response?.data?.message || 'Ошибка создания заказа' });
+    res.status(500).json({
+      message: error.response?.data?.message || 'Ошибка создания заказа',
+    });
   }
 };
