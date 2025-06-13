@@ -215,7 +215,7 @@ const createOrder = async ({ tariff_code, address, user, packages }) => {
     package_count: packages?.length,
   });
 
-  const tracking_number = `FAKE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const tracking_number = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return tracking_number;
 };
 
@@ -233,6 +233,15 @@ const getTrackingInfo = async (trackingNumber) => {
     lastUpdate: new Date(),
     estimatedDeliveryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
   };
+};
+
+const generateFakeTrackingNumber = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = 'FAKE-';
+  for (let i = 0; i < 10; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 };
 
 module.exports = {

@@ -47,6 +47,10 @@ function Login() {
       <p>
         Забыли пароль? <Link to="/forgot-password">Восстановить</Link>
       </p>
+      <p>
+        Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
+      </p>
+
     </div>
   );
 }

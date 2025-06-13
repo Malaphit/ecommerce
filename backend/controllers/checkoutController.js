@@ -178,12 +178,7 @@ exports.checkout = async (req, res) => {
     });
     const delivery_cost = Number(delivery_sum) || 0;
 
-    const tracking_number = await sdekService.createOrder({
-      tariff_code,
-      address,
-      user: req.user,
-      packages,
-    });
+    const tracking_number = `TRK-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     await order.update(
       {

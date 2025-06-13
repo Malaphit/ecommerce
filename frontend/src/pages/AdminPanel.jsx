@@ -48,15 +48,43 @@ function AdminPanel() {
         api.get(`/orders?status=${orderStatusFilter}&page=${orderPage}&limit=${limit}&sort=${orderSort}&order=${orderOrder}`),
         api.get(`/users?email=${userSearch}&page=${userPage}&limit=${limit}`),
       ]);
-      setProducts(prodRes.data.products || prodRes.data);
-      setProductPagination({ total: prodRes.data.total, pages: prodRes.data.pages });
-      setCategories(catRes.data.categories || catRes.data);
-      setCategoryPagination({ total: catRes.data.total, pages: catRes.data.pages });
-      setOrders(ordRes.data.orders || ordRes.data);
-      setOrderPagination({ total: ordRes.data.total, pages: ordRes.data.pages });
-      setUsers(userRes.data.users || userRes.data);
-      setUserPagination({ total: userRes.data.total, pages: userRes.data.pages });
+
+      const prodData = prodRes.data.products || prodRes.data;
+      setProducts(Array.isArray(prodData) ? prodData : []);
+      const newProductPagination = { total: prodRes.data.total || 0, pages: prodRes.data.pages || 1 };
+      setProductPagination(newProductPagination);
+      if (productPage > newProductPagination.pages && newProductPagination.pages > 0) {
+        setProductPage(newProductPagination.pages);
+      }
+
+      const catData = catRes.data.categories || catRes.data;
+      setCategories(Array.isArray(catData) ? catData : []);
+      const newCategoryPagination = { total: catRes.data.total || 0, pages: catRes.data.pages || 1 };
+      setCategoryPagination(newCategoryPagination);
+      if (categoryPage > newCategoryPagination.pages && newCategoryPagination.pages > 0) {
+        setCategoryPage(newCategoryPagination.pages);
+      }
+
+      const ordData = ordRes.data.orders || ordRes.data;
+      setOrders(Array.isArray(ordData) ? ordData : []);
+      const newOrderPagination = { total: ordRes.data.total || 0, pages: ordRes.data.pages || 1 };
+      setOrderPagination(newOrderPagination);
+      if (orderPage > newOrderPagination.pages && newOrderPagination.pages > 0) {
+        setOrderPage(newOrderPagination.pages);
+      }
+
+      const userData = userRes.data.users || userRes.data;
+      setUsers(Array.isArray(userData) ? userData : []);
+      const newUserPagination = { total: userRes.data.total || 0, pages: userRes.data.pages || 1 };
+      setUserPagination(newUserPagination);
+      if (userPage > newUserPagination.pages && newUserPagination.pages > 0) {
+        setUserPage(newUserPagination.pages);
+      }
     } catch (error) {
+      console.error('Ошибка загрузки данных:', {
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+      });
       toast.error('Ошибка загрузки данных: ' + (error.response?.data?.message || 'Ошибка сервера'));
     } finally {
       setIsLoading(false);
@@ -86,6 +114,10 @@ function AdminPanel() {
       toast.success('Элемент успешно удалён');
       fetchData();
     } catch (error) {
+      console.error('Ошибка удаления:', {
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+      });
       toast.error('Ошибка удаления: ' + (error.response?.data?.message || 'Ошибка сервера'));
     }
   };
@@ -155,6 +187,24 @@ function AdminPanel() {
           </>
         )}
       </li>
+    );
+  };
+
+  const renderPagination = (currentPage, setPage, pagination, isLoading) => {
+    if (pagination.pages <= 1) return null;
+    return (
+      <div className="pagination">
+        <button disabled={currentPage === 1 || isLoading} onClick={() => setPage(currentPage - 1)}>
+          Назад
+        </button>
+        <span>Страница {currentPage} из {pagination.pages}</span>
+        <button
+          disabled={currentPage === pagination.pages || isLoading}
+          onClick={() => setPage(currentPage + 1)}
+        >
+          Вперед
+        </button>
+      </div>
     );
   };
 
@@ -233,26 +283,13 @@ function AdminPanel() {
               {products.length === 0 ? (
                 <p>Продукты отсутствуют</p>
               ) : (
-                <>
-                  <ul className="admin-list">
-                    {products.map((product) =>
-                      renderItem('product', product, editProductId, ProductForm, { productId: product.id })
-                    )}
-                  </ul>
-                  <div className="pagination">
-                    <button disabled={productPage === 1 || isLoading} onClick={() => setProductPage(productPage - 1)}>
-                      Назад
-                    </button>
-                    <span>Страница {productPage} из {productPagination.pages}</span>
-                    <button
-                      disabled={productPage === productPagination.pages || isLoading}
-                      onClick={() => setProductPage(productPage + 1)}
-                    >
-                      Вперед
-                    </button>
-                  </div>
-                </>
+                <ul className="admin-list">
+                  {products.map((product) =>
+                    renderItem('product', product, editProductId, ProductForm, { productId: product.id })
+                  )}
+                </ul>
               )}
+              {renderPagination(productPage, setProductPage, productPagination, isLoading)}
             </>
           )}
 
@@ -263,26 +300,13 @@ function AdminPanel() {
               {categories.length === 0 ? (
                 <p>Категории отсутствуют</p>
               ) : (
-                <>
-                  <ul className="admin-list">
-                    {categories.map((category) =>
-                      renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id })
-                    )}
-                  </ul>
-                  <div className="pagination">
-                    <button disabled={categoryPage === 1 || isLoading} onClick={() => setCategoryPage(categoryPage - 1)}>
-                      Назад
-                    </button>
-                    <span>Страница {categoryPage} из {categoryPagination.pages}</span>
-                    <button
-                      disabled={categoryPage === categoryPagination.pages || isLoading}
-                      onClick={() => setCategoryPage(categoryPage + 1)}
-                    >
-                      Вперед
-                    </button>
-                  </div>
-                </>
+                <ul className="admin-list">
+                  {categories.map((category) =>
+                    renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id })
+                  )}
+                </ul>
               )}
+              {renderPagination(categoryPage, setCategoryPage, categoryPagination, isLoading)}
             </>
           )}
 
@@ -315,26 +339,13 @@ function AdminPanel() {
               {orders.length === 0 ? (
                 <p>Заказы отсутствуют</p>
               ) : (
-                <>
-                  <ul className="admin-list">
-                    {orders.map((order) =>
-                      renderItem('order', order, editOrderId, OrderForm, { orderId: order.id })
-                    )}
-                  </ul>
-                  <div className="pagination">
-                    <button disabled={orderPage === 1 || isLoading} onClick={() => setOrderPage(orderPage - 1)}>
-                      Назад
-                    </button>
-                    <span>Страница {orderPage} из {orderPagination.pages}</span>
-                    <button
-                      disabled={orderPage === orderPagination.pages || isLoading}
-                      onClick={() => setOrderPage(orderPage + 1)}
-                    >
-                      Вперед
-                    </button>
-                  </div>
-                </>
+                <ul className="admin-list">
+                  {orders.map((order) =>
+                    renderItem('order', order, editOrderId, OrderForm, { orderId: order.id })
+                  )}
+                </ul>
               )}
+              {renderPagination(orderPage, setOrderPage, orderPagination, isLoading)}
             </>
           )}
 
@@ -356,26 +367,13 @@ function AdminPanel() {
               {users.length === 0 ? (
                 <p>Пользователи отсутствуют</p>
               ) : (
-                <>
-                  <ul className="admin-list">
-                    {users.map((user) =>
-                      renderItem('user', user, editUserId, UserForm, { userId: user.id })
-                    )}
-                  </ul>
-                  <div className="pagination">
-                    <button disabled={userPage === 1 || isLoading} onClick={() => setUserPage(userPage - 1)}>
-                      Назад
-                    </button>
-                    <span>Страница {userPage} из {userPagination.pages}</span>
-                    <button
-                      disabled={userPage === userPagination.pages || isLoading}
-                      onClick={() => setUserPage(userPage + 1)}
-                    >
-                      Вперед
-                    </button>
-                  </div>
-                </>
+                <ul className="admin-list">
+                  {users.map((user) =>
+                    renderItem('user', user, editUserId, UserForm, { userId: user.id })
+                  )}
+                </ul>
               )}
+              {renderPagination(userPage, setUserPage, userPagination, isLoading)}
             </>
           )}
         </div>
