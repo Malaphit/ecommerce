@@ -17,7 +17,6 @@ function Cart() {
 
   useEffect(() => {
     if (!user) {
-      console.log('Cart: Нет пользователя, перенаправление на логин', { pathname: location.pathname });
       navigate('/login', { state: { from: location.pathname } });
       return;
     }
@@ -25,13 +24,8 @@ function Cart() {
     const fetchCart = async () => {
       try {
         const res = await api.get('/cart');
-        console.log('Cart: Корзина загружена', { items: res.data.length });
         setCartItems(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
-        console.error('Cart: Ошибка загрузки корзины', {
-          status: error.response?.status,
-          message: error.response?.data?.message || error.message,
-        });
         if (error.response?.status === 401) {
           toast.error('Сессия истекла. Пожалуйста, войдите снова.');
           logout();
@@ -44,13 +38,8 @@ function Cart() {
     const fetchAddresses = async () => {
       try {
         const res = await api.get('/addresses');
-        console.log('Cart: Адреса загружены', { addresses: res.data.length });
         setAddresses(Array.isArray(res.data) ? res.data : []);
       } catch (error) {
-        console.error('Cart: Ошибка загрузки адресов', {
-          status: error.response?.status,
-          message: error.response?.data?.message || error.message,
-        });
         if (error.response?.status === 401) {
           toast.error('Сессия истекла. Пожалуйста, войдите снова.');
           logout();
@@ -70,7 +59,6 @@ function Cart() {
       return;
     }
     try {
-      console.log('Cart: Расчет доставки', { address_id: selectedAddress });
       const res = await api.post('/checkout/calculate-delivery', {
         address_id: selectedAddress,
         tariff_code: '136',
@@ -78,14 +66,9 @@ function Cart() {
       if (!res.data.delivery_cost) {
         throw new Error('Стоимость доставки не получена');
       }
-      console.log('Cart: Доставка рассчитана', res.data);
       setDeliveryCost(res.data);
       toast.success('Стоимость доставки рассчитана');
     } catch (error) {
-      console.error('Cart: Ошибка расчета доставки', {
-        status: error.response?.status,
-        message: error.response?.data?.message || error.message,
-      });
       if (error.response?.status === 401) {
         toast.error('Сессия истекла. Пожалуйста, войдите снова.');
         logout();
@@ -98,14 +81,9 @@ function Cart() {
   const updateCart = async (id, quantity) => {
     try {
       const res = await api.put(`/cart/${id}`, { quantity });
-      console.log('Cart: Элемент корзины обновлен', { id, quantity });
       setCartItems(cartItems.map((item) => (item.id === id ? res.data : item)));
       toast.success('Количество обновлено');
     } catch (error) {
-      console.error('Cart: Ошибка обновления корзины', {
-        status: error.response?.status,
-        message: error.response?.data?.message || error.message,
-      });
       if (error.response?.status === 401) {
         toast.error('Сессия истекла. Пожалуйста, войдите снова.');
         logout();
@@ -118,14 +96,9 @@ function Cart() {
   const removeFromCart = async (id) => {
     try {
       await api.delete(`/cart/${id}`);
-      console.log('Cart: Элемент удален из корзины', { id });
       setCartItems(cartItems.filter((item) => item.id !== id));
       toast.success('Товар удален из корзины');
     } catch (error) {
-      console.error('Cart: Ошибка удаления товара', {
-        status: error.response?.status,
-        message: error.response?.data?.message || error.message,
-      });
       if (error.response?.status === 401) {
         toast.error('Сессия истекла. Пожалуйста, войдите снова.');
         logout();
@@ -144,29 +117,31 @@ function Cart() {
       toast.error('Корзина пуста');
       return;
     }
-    console.log('Cart: Открытие модального окна оплаты');
     setIsPaymentModalOpen(true);
   };
 
   const confirmPayment = async (isPaid) => {
-    console.log('Cart: Подтверждение оплаты', { isPaid });
     setIsPaymentModalOpen(false);
+    if (!isPaid) {
+      return; 
+    }
     try {
+      if (!user || !selectedAddress || !cartItems.length) {
+        toast.error('Заполните все необходимые поля');
+        return;
+      }
+
       const res = await api.post('/checkout/checkout', {
         address_id: selectedAddress,
         tariff_code: '136',
         payment_method: isPaid ? 'sberbank' : 'none',
       });
-      console.log('Cart: Заказ успешно создан', { order_id: res.data.order_id });
+
       toast.success('Заказ успешно создан');
       setCartItems([]);
       setDeliveryCost(null);
-      navigate('/profile/orders');
+      navigate('/profile');
     } catch (error) {
-      console.error('Cart: Ошибка при оформлении заказа', {
-        status: error.response?.status,
-        message: error.response?.data?.message || error.message,
-      });
       if (error.response?.status === 401) {
         toast.error('Сессия истекла. Пожалуйста, войдите снова.');
         logout();
@@ -203,38 +178,35 @@ function Cart() {
               removeFromCart={removeFromCart}
             />
           ))}
+          <div className="cart-bottom-section">
+            <div className="cart-summary">
+              <p>Итого без доставки: {totalPrice.toFixed(2)} ₽</p>
+              {deliveryCost && (
+                <p>
+                  Стоимость доставки: {deliveryCost.delivery_cost.toFixed(2)} ₽ (
+                  Ориентировочно: {deliveryCost.estimated_days.min}–{deliveryCost.estimated_days.max} дней)
+                </p>
+              )}
+              <p>Общая сумма: {(totalPrice + (deliveryCost?.delivery_cost || 0)).toFixed(2)} ₽</p>
+            </div>
 
-          <div className="cart-summary">
-            <p>Итого без доставки: {totalPrice.toFixed(2)} ₽</p>
-            {deliveryCost && (
-              <p>
-                Стоимость доставки: {deliveryCost.delivery_cost.toFixed(2)} ₽ (
-                Ориентировочно: {deliveryCost.estimated_days.min}–
-                {deliveryCost.estimated_days.max} дней)
-              </p>
-            )}
-            <p>Общая сумма: {(totalPrice + (deliveryCost?.delivery_cost || 0)).toFixed(2)} ₽</p>
-          </div>
-
-          <div className="address-selector">
-            <label>Выберите адрес:</label>
-            <select
-              value={selectedAddress}
-              onChange={(e) => {
-                console.log('Cart: Выбран адрес', { address_id: e.target.value });
-                setSelectedAddress(Number(e.target.value));
-              }}
-            >
-              <option value="">Выберите адрес</option>
-              {addresses.map((addr) => (
-                <option key={addr.id} value={addr.id}>
-                  {addr.city}, {addr.street}, {addr.house}
-                  {addr.building ? `, корп. ${addr.building}` : ''}
-                  {addr.apartment ? `, кв. ${addr.apartment}` : ''}
-                </option>
-              ))}
-            </select>
-            <button onClick={calculateDelivery}>Рассчитать доставку</button>
+            <div className="address-selector">
+              <label>Выберите адрес:</label>
+              <select
+                value={selectedAddress}
+                onChange={(e) => setSelectedAddress(Number(e.target.value))}
+              >
+                <option value="">Выберите адрес</option>
+                {addresses.map((addr) => (
+                  <option key={addr.id} value={addr.id}>
+                    {addr.city}, {addr.street}, {addr.house}
+                    {addr.building ? `, корп. ${addr.building}` : ''}
+                    {addr.apartment ? `, кв. ${addr.apartment}` : ''}
+                  </option>
+                ))}
+              </select>
+              <button onClick={calculateDelivery}>Рассчитать доставку</button>
+            </div>
           </div>
 
           <button
@@ -255,14 +227,7 @@ function Cart() {
             <div className="payment-buttons">
               <button onClick={() => confirmPayment(true)}>Оплатили</button>
               <button onClick={() => confirmPayment(false)}>Не оплатили</button>
-              <button
-                onClick={() => {
-                  console.log('Cart: Закрытие модального окна оплаты');
-                  setIsPaymentModalOpen(false);
-                }}
-              >
-                Отмена
-              </button>
+              <button onClick={() => setIsPaymentModalOpen(false)}>Отмена</button>
             </div>
           </div>
         </div>

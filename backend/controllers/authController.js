@@ -66,3 +66,16 @@ exports.resetPassword = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+exports.getMe = async (req, res) => {
+  try {
+    res.json({
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      cartOrderId: req.user.cartOrderId,
+    });
+  } catch (error) {
+    console.error('getMe error:', error);
+    res.status(500).json({ message: 'Ошибка получения пользователя' });
+  }
+};

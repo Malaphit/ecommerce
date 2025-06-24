@@ -3,6 +3,7 @@ import api from '../services/api';
 import Carousel from '../components/Carousel';
 import ProductCard from '../components/ProductCard';
 
+
 function Home() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -20,27 +21,29 @@ function Home() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        const params = {
+          sort,
+          order,
+          is_active: true,
+        };
+
+        if (categoryFilter) params.category_id = categoryFilter;
+        if (search.trim()) params.search = search.trim();
+        if (minPrice) params.min_price = minPrice;
+        if (maxPrice) params.max_price = maxPrice;
+        if (sizeFilter) params.size = sizeFilter;
+
         const [prodRes, catRes] = await Promise.all([
-          api.get(`/products`, {
-            params: {
-              category_id: categoryFilter,
-              sort,
-              order,
-              search,
-              min_price: minPrice,
-              max_price: maxPrice,
-              size: sizeFilter,
-              is_active: true,
-            },
-          }),
+          api.get('/products', { params }),
           api.get('/categories'),
         ]);
+
         setProducts(prodRes.data.products || prodRes.data);
         setCategories(catRes.data.categories || catRes.data);
 
-        const uniqueSizes = [...new Set(
-          prodRes.data.products?.flatMap((p) => p.available_sizes || [])
-        )].sort();
+        const uniqueSizes = [
+          ...new Set(prodRes.data.products?.flatMap((p) => p.available_sizes || [])),
+        ].sort();
         setSizes(uniqueSizes);
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
@@ -48,29 +51,33 @@ function Home() {
         setIsLoading(false);
       }
     };
+
     fetchData();
   }, [categoryFilter, sort, order, search, minPrice, maxPrice, sizeFilter]);
+
+  const resetFilters = () => {
+    setCategoryFilter('');
+    setSort('price');
+    setOrder('ASC');
+    setSearch('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSizeFilter('');
+  };
 
   return (
     <div className="page-container">
       <div className="filters">
         <div className="filter-group">
-          <label>Поиск:</label>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Название товара"
-          />
+          <label htmlFor="search">Поиск:</label>
+          <input id="search" type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Название товара" />
         </div>
         <div className="filter-group">
           <label>Категория:</label>
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
             <option value="">Все категории</option>
             {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
         </div>
@@ -79,32 +86,18 @@ function Home() {
           <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value)}>
             <option value="">Все размеры</option>
             {sizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
+              <option key={size} value={size}>{size}</option>
             ))}
           </select>
         </div>
-        <div className="filter-group price-group">
+        <div className="filter-group">
           <label>Цена:</label>
           <div className="price-inputs">
-            <input
-              type="number"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              placeholder="Мин"
-              min="0"
-            />
-            <input
-              type="number"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              placeholder="Макс"
-              min="0"
-            />
+            <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Мин" min="0" />
+            <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Макс" min="0" />
           </div>
         </div>
-        <div className="filter-group sort-group">
+        <div className="filter-group">
           <label>Сортировка:</label>
           <div className="sort-inputs">
             <select value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -117,12 +110,15 @@ function Home() {
             </select>
           </div>
         </div>
+        <button className="reset-button" onClick={resetFilters}>Сбросить фильтры</button>
       </div>
       <div className="home">
-        <h1>Добро пожаловать в Alesandro Vitorio!</h1>
         <Carousel products={products} />
+        <div className="banner">
+          <h1>Добро пожаловать в <span>Alesandro Vitorio</span>!</h1>
+        </div>
         {isLoading ? (
-          <p>Загрузка...</p>
+          <p className="loading">Загрузка...</p>
         ) : (
           <div className="products-list">
             {products.length === 0 ? (

@@ -21,39 +21,44 @@ import { ToastContainer } from 'react-toastify';
 function App() {
   return (
     <AuthProvider>
-      <ToastContainer position="top-right" autoClose={3000} />
-      <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/product/:id" element={<ProductPage />} />
-        <Route path="/faq" element={<FAQ />} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-        <Route path="/profile/orders" element={<OrderHistory />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminPanel />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/manager"
-          element={
-            <ProtectedRoute allowedRoles={['manager']}>
-              <ManagerPanel />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-      </Routes>
-      <Footer />
+      <div className="page-wrapper">
+        <ToastContainer position="top-right" autoClose={3000} />
+        <Header />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+            <Route path="/profile/orders" element={<OrderHistory />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminPanel />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manager"
+              element={
+                <ProtectedRoute allowedRoles={['manager']}>
+                  <ManagerPanel />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
     </AuthProvider>
   );
 }
+
 
 export default App;

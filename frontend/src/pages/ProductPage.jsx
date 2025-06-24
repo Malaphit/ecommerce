@@ -29,6 +29,18 @@ const ProductPage = () => {
     fetchProduct();
   }, [id]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSelectedImage((prevIndex) =>
+        product?.ProductImages?.length
+          ? (prevIndex + 1) % product.ProductImages.length
+          : 0
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [product]);
+
   const handleAddToCart = async () => {
     if (!user) {
       toast.error('Пожалуйста, войдите в аккаунт');
@@ -39,25 +51,38 @@ const ProductPage = () => {
       toast.error('Пожалуйста, выберите размер');
       return;
     }
-    if (quantity < 1) {
-      toast.error('Количество должно быть не менее 1');
+    if (quantity < 1 || quantity > 3) {
+      toast.error('Можно добавить от 1 до 3 штук');
       return;
     }
   
     try {
+      const res = await api.get('/cart');
+      const cartItems = Array.isArray(res.data.items) ? res.data.items : [];
+
+      const existingItem = cartItems.find(
+        (item) => item.product_id === product.id && item.size === selectedSize
+      );
+  
+      if (existingItem && existingItem.quantity + quantity > 3) {
+        toast.error(`В корзине уже ${existingItem.quantity} шт. Максимум — 3`);
+        return;
+      }
+  
       await api.post('/cart', {
         product_id: product.id,
         size: selectedSize,
         quantity,
       });
+  
       toast.success('Товар добавлен в корзину');
       navigate('/cart');
     } catch (err) {
-      console.error('Ошибка добавления в корзину:', err.response?.data); 
+      console.error('Ошибка добавления в корзину:', err.response?.data);
       toast.error(err.response?.data?.message || 'Ошибка добавления в корзину');
     }
   };
-
+  
   if (isLoading) {
     return <div className="product-detail">Загрузка...</div>;
   }
@@ -113,6 +138,7 @@ const ProductPage = () => {
             <input
               type="number"
               min="1"
+              max="3"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
             />

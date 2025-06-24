@@ -1,22 +1,44 @@
-const { Product, Category, ProductImage, Op } = require('../models');
+const { Product, Category, ProductImage } = require('../models');
+const { Op } = require('sequelize'); 
+
 const fs = require('fs');
 const path = require('path');
 
 exports.getProducts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, sort = 'created_at', order = 'DESC', search, category_id, is_active } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sort = 'created_at',
+      order = 'DESC',
+      search,
+      category_id,
+      is_active,
+    } = req.query;
+
     const offset = (page - 1) * limit;
     const where = {};
+
     if (search) where.name = { [Op.iLike]: `%${search}%` };
     if (category_id) where.category_id = category_id;
-    if (is_active !== undefined && is_active !== '') where.is_active = is_active === 'true';
+    if (is_active !== undefined && is_active !== '') {
+      where.is_active = is_active === 'true';
+    }
+
+    const allowedSortFields = ['id', 'name', 'price', 'created_at'];
+    const safeSort = allowedSortFields.includes(sort) ? sort : 'created_at';
+
+    const safeOrder = order && order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     const { count, rows } = await Product.findAndCountAll({
       where,
-      include: [{ model: Category, attributes: ['id', 'name'] }, { model: ProductImage }],
-      order: [[sort, order.toUpperCase()]],
-      limit,
-      offset,
+      include: [
+        { model: Category, attributes: ['id', 'name'] },
+        { model: ProductImage },
+      ],
+      order: [[safeSort, safeOrder]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
 
     res.json({
@@ -26,7 +48,8 @@ exports.getProducts = async (req, res) => {
       pages: Math.ceil(count / limit),
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Ошибка в getProducts:', error.message, error.stack);
+    res.status(500).json({ message: `Ошибка загрузки товаров: ${error.message}` });
   }
 };
 

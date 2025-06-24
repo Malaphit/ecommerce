@@ -227,8 +227,23 @@ exports.createOrder = async (req, res) => {
 
     await user.update({ cartOrderId: null }, { transaction: t });
 
+    await user.update({ cartOrderId: null }, { transaction: t });
+
+    const newCartOrder = await Order.create({
+      user_id: user.id,
+      status: 'pending',
+      total_price: 0,
+      address_id: null,
+    }, { transaction: t });
+
+    await user.update({ cartOrderId: newCartOrder.id }, { transaction: t });
+
     await t.commit();
-    res.status(201).json({ message: 'Заказ успешно создан', order_id: order.id });
+    res.status(201).json({
+      message: 'Заказ успешно создан',
+      order_id: order.id,
+      new_cart_order_id: newCartOrder.id,
+    });
   } catch (error) {
     await t.rollback();
     console.error('Ошибка в createOrder:', {
@@ -326,7 +341,13 @@ exports.deleteOrder = async (req, res) => {
       return res.status(404).json({ message: 'Заказ не найден' });
     }
 
+    await sequelize.models.Payment.destroy({
+      where: { order_id: order.id },
+      transaction: t,
+    });
+
     await order.destroy({ transaction: t });
+
     await t.commit();
     res.json({ message: 'Заказ успешно удален' });
   } catch (error) {

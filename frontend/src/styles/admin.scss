@@ -1,3 +1,4 @@
+@import './variables';
 .admin-panel {
     padding: 20px;
     background: $background-color;
@@ -73,7 +74,7 @@
     font-family: $font-family-secondary;
     font-size: 1rem;
   }
-  
+
   .admin-filters input,
   .admin-filters select {
     padding: 10px;
@@ -233,3 +234,5 @@
       width: 100%;
     }
   }
+
+  

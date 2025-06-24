@@ -1,110 +1,166 @@
 .cart-container {
-    max-width: 1000px;
-    margin: 20px auto;
-    padding: 20px;
-    background: $background-color;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .cart-container h1 {
-    font-family: $font-family;
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: $border-color;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+  h1 {
     font-size: 2rem;
+    margin-bottom: 1rem;
     text-align: center;
-    margin-bottom: 30px;
-    color: $text-color;
-  }
-  
-  .cart-container p {
-    font-family: $font-family-secondary;
-    font-size: 1.1rem;
-    text-align: center;
-    color: #666;
-  }
-  
-  .cart-items {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
-  }
-  
-  .cart-summary {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  }
-  
-  .cart-summary p {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: $text-color;
-  }
-  
-  @media (max-width: 768px) {
-    .cart-container {
-      margin: 10px;
-      padding: 15px;
-    }
-  
-    .cart-container h1 {
-      font-size: 1.5rem;
-    }
-  
-    .cart-summary p {
-      font-size: 1rem;
-    }
   }
 
-  .payment-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+  p {
+    margin: 0.5rem 0;
   }
-  .payment-modal {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 400px;
-    width: 100%;
-    text-align: center;
-  }
-  .payment-modal h2 {
-    margin-bottom: 10px;
-  }
-  .payment-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 20px;
-  }
-  .payment-buttons button {
-    padding: 10px 20px;
+
+  button {
+    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+    background-color: #f7452c;
+    color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #d93823;
+    }
+
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
   }
-  .payment-buttons button:first-child {
-    background: #28a745;
-    color: white;
+}
+
+.cart-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 0;
+  border-bottom: 1px solid #ddd;
+
+  img {
+    border-radius: 8px;
+    object-fit: cover;
   }
-  .payment-buttons button:nth-child(2) {
-    background: #dc3545;
-    color: white;
+
+  > div {
+    flex: 1;
+
+    p {
+      margin: 0.25rem 0;
+    }
+
+    button {
+      margin-top: 0.5rem;
+      background-color: #aaa;
+
+      &:hover {
+        background-color: #888;
+      }
+    }
   }
-  .payment-buttons button:last-child {
-    background: #6c757d;
-    color: white;
+}
+
+.cart-bottom-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+  align-items: flex-start;
+
+  .address-selector,
+  .cart-summary {
+    flex: 1;
+    min-width: 250px;
   }
+
+  .cart-summary {
+    background-color: $neutral-muted;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+}
+
+.address-selector {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  select {
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+
+  button {
+    width: fit-content;
+  }
+}
+
+.payment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .payment-modal {
+    background-color: $background-color;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    color: $text-color;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3); 
+
+    h2 {
+      margin-bottom: 1rem;
+      color: inherit; 
+    }
+
+    p {
+      margin: 0.5rem 0;
+      color: inherit; 
+    }
+
+    .payment-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+
+      button {
+        width: 100%;
+        background-color: $accent-color; 
+        color: $text-color;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: darken($accent-color, 10%);
+        }
+
+        &:last-child {
+          background-color: #aaa; 
+
+          &:hover {
+            background-color: #888;
+          }
+        }
+      }
+    }
+  }
+}

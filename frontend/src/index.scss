@@ -10,7 +10,24 @@
 @import './styles/admin';
 @import './styles/forms';
 @import './styles/Cart';
-// @import './styles/OrderForm.css';
+@import './styles/Footer.scss';
+
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+}
 
 body {
   margin: 0;
@@ -80,3 +97,4 @@ body {
     flex-direction: column;
   }
 }
+

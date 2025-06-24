@@ -1,124 +1,195 @@
 .carousel {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 20px;
-    background: $background-color;
-    color: $text-color;
-    position: relative;
-    overflow: hidden;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 15px; 
+  background: $background-color;
+  color: $text-color;
+  position: relative;
+  overflow: hidden;
+}
+
+.carousel-wrapper {
+  overflow: hidden;
+  width: 100%;
+}
+
+.carousel-slides {
+  display: flex;
+  transition: transform $transition;
+  width: 100%;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px; 
+  padding: 15px; 
+  box-sizing: border-box;
+  background: $slide-bg;
+  border-radius: 8px;
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px; 
+  gap: 6px;
+
+  .indicator-dot {
+    width: 8px; 
+    height: 8px; 
+    border-radius: 50%;
+    background: lighten($text-color, 20%);
+    cursor: pointer;
+    transition: background $transition;
+
+    &.active {
+      background: $accent-color;
+    }
+
+    &:hover,
+    &:focus {
+      outline: none;
+      background: $accent-color;
+    }
   }
-  
-  .carousel-slides {
-    display: flex;
-    transition: transform $transition;
+}
+
+.slide-image img {
+  width: 100%; 
+  height: auto; 
+  max-height: $image-size; 
+  object-fit: cover;
+  border: 1px solid $border-color;
+  display: block;
+}
+
+.slide-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; 
+}
+
+.slide-title {
+  font-family: $font-family;
+  font-size: 2rem;
+  margin: 0;
+  text-align: center;
+}
+
+.slide-description {
+  font-family: $font-family-secondary;
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.slide-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px; 
+  justify-content: flex-end;
+}
+
+.slide-price {
+  font-family: $font-family;
+  font-size: 1.5rem;
+  color: $accent-color;
+}
+
+.slide-button {
+  background: $accent-color;
+  color: $text-color;
+  border: none;
+  padding: 8px 15px; 
+  font-family: $font-family-secondary;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: $transition;
+  &:hover {
+    opacity: 0.9;
   }
-  
-  .carousel-slide {
-    display: flex;
-    align-items: center;
-    gap: 30px;
-    min-width: 100%;
-    padding: 20px;
-    box-sizing: border-box;
-    background: $slide-bg;
-    border-radius: 8px;
-  }
-  
-  .slide-image img {
-    width: $image-size;
-    height: $image-size;
-    object-fit: cover;
-    border: 1px solid $border-color;
-  }
-  
-  .slide-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .slide-title {
-    font-family: $font-family;
-    font-size: 2rem;
-    margin: 0;
-    text-align: center;
-  }
-  
-  .slide-description {
-    font-family: $font-family-secondary;
-    font-size: 1rem;
-    text-align: center;
-    line-height: 1.5;
-  }
-  
-  .slide-footer {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    justify-content: flex-end;
-  }
-  
-  .slide-price {
-    font-family: $font-family;
-    font-size: 1.5rem;
+}
+
+.carousel-controls {
+  display: flex;
+  justify-content: space-between;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  transform: translateY(-50%);
+}
+
+.control-prev,
+.control-next {
+  background: transparent;
+  border: none;
+  color: $text-color;
+  cursor: pointer;
+  padding: 8px; 
+  transition: $transition;
+  &:hover {
     color: $accent-color;
   }
-  
-  .slide-button {
-    background: $accent-color;
-    color: $text-color;
-    border: none;
-    padding: 10px 20px;
-    font-family: $font-family-secondary;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: $transition;
-    &:hover {
-      opacity: 0.9;
-    }
+  svg {
+    width: 20px;
+    height: 20px; 
   }
-  
-  .carousel-controls {
-    display: flex;
-    justify-content: space-between;
-    position: absolute;
-    top: 50%;
+}
+
+@media (max-width: 1000px) {
+  .slide-image img {
+    max-height: 250px; 
+  }
+  .slide-title {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .carousel-slide {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .slide-image img {
     width: 100%;
-    transform: translateY(-50%);
+    height: auto;
+    max-height: 180px; 
   }
-  
-  .control-prev,
-  .control-next {
-    background: transparent;
-    border: none;
-    color: $text-color;
-    cursor: pointer;
-    padding: 10px;
-    transition: $transition;
-    &:hover {
-      color: $accent-color;
-    }
-    svg {
-      width: 24px;
-      height: 24px;
-    }
+  .slide-title {
+    font-size: 1.5rem;
   }
-  
-  @media (max-width: 768px) {
-    .carousel-slide {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .slide-image img {
-      width: 100%;
-      height: auto;
-      max-height: $image-size;
-    }
-    .slide-title {
-      font-size: 1.5rem;
-    }
-    .slide-footer {
-      justify-content: center;
-    }
+  .slide-footer {
+    justify-content: center;
   }
+}
+
+@media (max-width: 600px) {
+  .slide-image img {
+    max-height: 150px; 
+  }
+  .slide-title {
+    font-size: 1.3rem;
+  }
+  .slide-button {
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .slide-image img {
+    max-height: 120px; 
+  }
+  .slide-title {
+    font-size: 1.2rem;
+  }
+  .slide-price {
+    font-size: 1.3rem;
+  }
+  .slide-button {
+    padding: 5px 10px;
+    font-size: 0.9rem;
+  }
+}

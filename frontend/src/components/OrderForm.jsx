@@ -3,7 +3,7 @@ import debounce from 'lodash.debounce';
 import api from '../services/api';
 import { toast } from 'react-toastify';
 
-function OrderForm({ orderId, onSave }) {
+function OrderForm({ orderId, onSave, onCancel }) {
   const [formData, setFormData] = useState({
     user_id: '',
     user_email: '',
@@ -131,85 +131,106 @@ function OrderForm({ orderId, onSave }) {
       <h2>{orderId ? 'Редактировать заказ' : 'Добавить заказ'}</h2>
       {errors.general && <p className="error">{errors.general}</p>}
       <form onSubmit={handleSubmit}>
-        <div className="autocomplete-container">
-          <label>Пользователь (email):</label>
-          <input
-            type="email"
-            value={searchEmail}
-            onChange={(e) => setSearchEmail(e.target.value)}
-            placeholder="Введите email"
-          />
-          {searchResults.length > 0 && (
-            <ul className="autocomplete-list">
-              {searchResults.map((user) => (
-                <li
-                  key={user.id}
-                  onClick={() => handleSelectUser(user)}
-                  className={`autocomplete-item ${formData.user_id === user.id ? 'selected' : ''}`}
-                >
-                  {user.email}
-                </li>
-              ))}
-            </ul>
-          )}
-          {formData.user_email && (
-            <p className="success">
-              Выбрано: {formData.user_email} (ID: {formData.user_id})
-            </p>
-          )}
-          {searchError && <p className="error">{searchError}</p>}
-          {errors.user_id && <p className="error">{errors.user_id}</p>}
-        </div>
-        <div>
-          <label>Общая сумма:</label>
-          <input
-            type="number"
-            step="0.01"
-            value={formData.total_price || 0}
-            onChange={(e) => setFormData((prev) => ({ ...prev, total_price: parseFloat(e.target.value) || 0 }))}
-            placeholder="Общая сумма"
-          />
-          {errors.total_price && <p className="error">{errors.total_price}</p>}
-        </div>
-        <div>
-          <label>Статус:</label>
-          <select
-            value={formData.status || 'pending'}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-          >
-            <option value="pending">В обработке</option>
-            <option value="shipped">Отправлен</option>
-            <option value="delivered">Доставлен</option>
-            <option value="cancelled">Отменен</option>
-          </select>
-        </div>
-        <div>
-          <label>Адрес:</label>
-          <select
-            value={formData.address_id || ''}
-            onChange={(e) => setFormData({ ...formData, address_id: e.target.value })}
-          >
-            <option value="">Выберите адрес</option>
-            {addresses.map((addr) => (
-              <option key={addr.id} value={addr.id}>
-                {addr.city}, {addr.street}, {addr.house}
-              </option>
-            ))}
-          </select>
-          {errors.address_id && <p className="error">{errors.address_id}</p>}
-        </div>
-        <div>
-          <label>Трек-номер:</label>
-          <input
-            type="text"
-            value={formData.tracking_number || ''}
-            onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
-            placeholder="Трек-номер"
-          />
-          {errors.tracking_number && <p className="error">{errors.tracking_number}</p>}
-        </div>
-        <button type="submit">Сохранить</button>
-      </form>
+  <div className="form-row">
+    <div className="form-group autocomplete-container">
+      <label>Пользователь (email):</label>
+      <input
+        type="email"
+        value={searchEmail}
+        onChange={(e) => setSearchEmail(e.target.value)}
+        placeholder="Введите email"
+      />
+      {searchResults.length > 0 && (
+        <ul className="autocomplete-list">
+          {searchResults.map((user) => (
+            <li
+              key={user.id}
+              onClick={() => handleSelectUser(user)}
+              className={`autocomplete-item ${formData.user_id === user.id ? 'selected' : ''}`}
+            >
+              {user.email}
+            </li>
+          ))}
+        </ul>
+      )}
+      {formData.user_email && (
+        <p className="success">
+          Выбрано: {formData.user_email} (ID: {formData.user_id})
+        </p>
+      )}
+      {searchError && <p className="error">{searchError}</p>}
+      {errors.user_id && <p className="error">{errors.user_id}</p>}
+    </div>
+
+    <div className="form-group">
+      <label>Статус:</label>
+      <select
+        value={formData.status || 'pending'}
+        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+      >
+        <option value="pending">В обработке</option>
+        <option value="shipped">Отправлен</option>
+        <option value="delivered">Доставлен</option>
+        <option value="cancelled">Отменен</option>
+      </select>
+    </div>
+
+    <div className="form-group">
+      <label>Общая сумма:</label>
+      <input
+        type="number"
+        step="0.01"
+        value={formData.total_price || 0}
+        onChange={(e) => setFormData((prev) => ({ ...prev, total_price: parseFloat(e.target.value) || 0 }))}
+        placeholder="Общая сумма"
+      />
+      {errors.total_price && <p className="error">{errors.total_price}</p>}
+    </div>
+  </div>
+
+  <div className="form-row">
+    <div className="form-group">
+      <label>Адрес:</label>
+      <select
+        value={formData.address_id || ''}
+        onChange={(e) => setFormData({ ...formData, address_id: e.target.value })}
+      >
+        <option value="">Выберите адрес</option>
+        {addresses.map((addr) => (
+          <option key={addr.id} value={addr.id}>
+            {addr.city}, {addr.street}, {addr.house}
+          </option>
+        ))}
+      </select>
+      {errors.address_id && <p className="error">{errors.address_id}</p>}
+    </div>
+
+    <div className="form-group">
+      <label>Трек-номер:</label>
+      <input
+        type="text"
+        value={formData.tracking_number || ''}
+        onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
+        placeholder="Трек-номер"
+      />
+      {errors.tracking_number && <p className="error">{errors.tracking_number}</p>}
+    </div>
+
+    <div className="form-group" />
+  </div>
+
+  <div className="form-row">
+    <div className="form-group">
+      <button type="submit">Сохранить</button>
+    </div>
+    <div className="form-group button-row">
+      <button type="button" onClick={onCancel}>Отмена</button>
+    </div>
+    <div className="form-group" />
+    <div className="form-group" />
+  </div>
+</form>
+
     </div>
   );
 }

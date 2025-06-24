@@ -1,0 +1,53 @@
+Основные программы для запуска проекта
+Backend (Node.js, Express, PostgreSQL)
+Node.js (версия ≥ 18.x)
+Скачать: https://nodejs.org/
+
+PostgreSQL (версия ≥ 13)
+Скачать: https://www.postgresql.org/download/
+
+npm (идёт в комплекте с Node.js)
+
+Установить зависимости backend
+
+cd backend
+npm install
+Настроить переменные окружения
+Создай файл .env в папке backend и пропиши:
+
+
+PORT=5000
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=ecommerce
+DB_USER=postgres
+DB_PASSWORD=your_password
+JWT_SECRET=your_secret_key
+SDEK_API_MODE=stub
+Frontend (React)
+npm (уже установлен с Node.js)
+
+React (используется Create React App)
+
+Установить зависимости frontend
+bash
+
+cd frontend
+npm install
+
+Запуск фронтенда
+bash
+
+
+npm start
+Откроется: http://localhost:3000
+
+Запуск полного проекта 
+1. Запустить PostgreSQL (через pgAdmin или вручную)
+2. Запустить backend
+cd backend
+npm run dev
+
+3. Запустить frontend
+cd frontend
+npm start

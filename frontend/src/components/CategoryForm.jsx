@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-function CategoryForm({ categoryId, onSave }) {
-  const [formData, setFormData] = useState({ name: '', description: '', weight: 0 });
+function CategoryForm({ categoryId, onSave, onCancel }) {
+  const initialState = { name: '', description: '', weight: 0 };
+  const [formData, setFormData] = useState(initialState);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -31,8 +32,7 @@ function CategoryForm({ categoryId, onSave }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!validate()) return;
     try {
       if (categoryId) {
@@ -40,7 +40,7 @@ function CategoryForm({ categoryId, onSave }) {
       } else {
         await api.post('/categories', formData);
       }
-      setFormData({ name: '', description: '', weight: 0 });
+      setFormData(initialState);
       setErrors({});
       onSave();
     } catch (error) {
@@ -48,42 +48,58 @@ function CategoryForm({ categoryId, onSave }) {
     }
   };
 
+  const handleCancel = () => {
+    setFormData(initialState);
+    setErrors({});
+    if (onCancel) onCancel();
+  };
+
   return (
     <div className="form-container">
       <h2>{categoryId ? 'Редактировать категорию' : 'Добавить категорию'}</h2>
       {errors.general && <p className="error">{errors.general}</p>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Название:</label>
-          <input
-            type="text"
-            value={formData.name || ''}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Название категории"
-          />
-          {errors.name && <p className="error">{errors.name}</p>}
-        </div>
-        <div>
-          <label>Описание:</label>
-          <textarea
-            value={formData.description || ''}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Описание категории"
-          />
-          {errors.description && <p className="error">{errors.description}</p>}
-        </div>
-        <div>
-          <label>Вес:</label>
-          <input
-            type="number"
-            value={formData.weight || 0}
-            onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-            placeholder="Вес категории"
-          />
-          {errors.weight && <p className="error">{errors.weight}</p>}
-        </div>
-        <button type="submit">Сохранить</button>
-      </form>
+
+      <form>
+  <div className="form-row">
+    <div className="form-group">
+      <label>Название:</label>
+      <input
+        type="text"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        placeholder="Название категории"
+      />
+      {errors.name && <p className="error">{errors.name}</p>}
+    </div>
+    <div className="form-group">
+      <label>Вес:</label>
+      <input
+        type="number"
+        value={formData.weight}
+        onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+        placeholder="Вес категории"
+      />
+      {errors.weight && <p className="error">{errors.weight}</p>}
+    </div>
+  </div>
+
+  <div className="form-row">
+    <div className="form-group full-width">
+      <label>Описание:</label>
+      <textarea
+        value={formData.description}
+        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        placeholder="Описание категории"
+      />
+      {errors.description && <p className="error">{errors.description}</p>}
+    </div>
+  </div>
+
+  <div className="form-actions">
+    <button type="submit" className="save-btn">Сохранить</button>
+    <button type="button" className="cancel-btn" onClick={handleCancel}>Отмена</button>
+  </div>
+</form>
     </div>
   );
 }

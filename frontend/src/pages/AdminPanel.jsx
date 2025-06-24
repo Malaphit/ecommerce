@@ -182,7 +182,8 @@ function AdminPanel() {
               <button onClick={() => handleEdit(type, item.id)}>
                 {isEditing ? 'Отмена' : 'Редактировать'}
               </button>
-              <button onClick={() => handleDelete(`/${type}s`, item.id)}>Удалить</button>
+              <button
+                 onClick={() =>handleDelete(type === 'category' ? '/categories' : `/${type}s`,item.id)}>Удалить</button>
             </div>
           </>
         )}
@@ -216,7 +217,7 @@ function AdminPanel() {
             className={`sidebar-item ${activeSection === 'products' ? 'active' : ''}`}
             onClick={() => setActiveSection('products')}
           >
-            Продукты
+            Товары
           </div>
           <div
             className={`sidebar-item ${activeSection === 'categories' ? 'active' : ''}`}
@@ -243,7 +244,6 @@ function AdminPanel() {
 
           {activeSection === 'products' && (
             <>
-              <h2>Продукты</h2>
               <div className="admin-filters">
                 <div>
                   <label>Фильтр по категории:</label>
@@ -268,8 +268,8 @@ function AdminPanel() {
                     <option value="DESC">По убыванию</option>
                   </select>
                 </div>
-                <div>
-                  <label>
+                <div className="admin-checkbox-group">
+                  <label >
                     <input
                       type="checkbox"
                       checked={showInactive}
@@ -281,7 +281,7 @@ function AdminPanel() {
               </div>
               <ProductForm onSave={handleSave} />
               {products.length === 0 ? (
-                <p>Продукты отсутствуют</p>
+                <p>Товары отсутствуют</p>
               ) : (
                 <ul className="admin-list">
                   {products.map((product) =>
@@ -302,7 +302,7 @@ function AdminPanel() {
               ) : (
                 <ul className="admin-list">
                   {categories.map((category) =>
-                    renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id })
+                    renderItem('category', category, editCategoryId, CategoryForm, { categoryId: category.id, onCancel: () => setEditCategoryId(null), })
                   )}
                 </ul>
               )}
@@ -341,7 +341,7 @@ function AdminPanel() {
               ) : (
                 <ul className="admin-list">
                   {orders.map((order) =>
-                    renderItem('order', order, editOrderId, OrderForm, { orderId: order.id })
+                    renderItem('order', order, editOrderId, OrderForm, { orderId: order.id, onCancel: () => setEditOrderId(null), })
                   )}
                 </ul>
               )}
@@ -369,7 +369,7 @@ function AdminPanel() {
               ) : (
                 <ul className="admin-list">
                   {users.map((user) =>
-                    renderItem('user', user, editUserId, UserForm, { userId: user.id })
+                    renderItem('user', user, editUserId, UserForm, { userId: user.id, onCancel: () => setEditUserId(null), })
                   )}
                 </ul>
               )}
